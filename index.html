@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="I build data-driven systems that ship fast — engineered like a race team. Software Engineer Portfolio." />
+    <meta name="author" content="Noah Mendoza" />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Noah Mendoza - Software Engineer Portfolio" />
+    <meta property="og:description" content="I build data-driven systems that ship fast — engineered like a race team." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://yourdomain.dev" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Noah Mendoza - Software Engineer Portfolio" />
+    <meta name="twitter:description" content="I build data-driven systems that ship fast — engineered like a race team." />
+    
+    <title>Noah Mendoza - Software Engineer Portfolio</title>
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Noah Mendoza",
+      "jobTitle": "Software Engineer",
+      "url": "https://yourdomain.dev",
+      "sameAs": []
+    }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <script>
+      (function(){
+        try {
+          var k = 'pref-theme';
+          var s = localStorage.getItem(k);
+          if (!s) {
+            var systemLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+            s = systemLight ? 'light' : 'dark';
+          }
+          document.documentElement.dataset.theme = s;
+        } catch(e) {}
+      })();
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body style="margin: 0; padding: 0; overflow: hidden;">
+    <!-- React App will be mounted here by Vite -->
+    <div id="hero-root" style="width: 100vw; height: 100vh;"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <noscript>
+      This site requires JavaScript to render the 3D environment. Please enable JavaScript for the best experience.
+    </noscript>
+  </body>
+  </html>
+
+

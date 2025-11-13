@@ -1,0 +1,1295 @@
+import React, { useState, useMemo, useEffect } from 'react'
+import { useSpring, animated } from '@react-spring/three'
+import { RoundedBox, Text, MeshTransmissionMaterial, useTexture } from '@react-three/drei'
+import { useLoader } from '@react-three/fiber'
+import * as THREE from 'three'
+
+interface IconProps {
+  position: [number, number, number]
+  color: string
+  iconType?: string
+  label?: string
+  onClick?: () => void
+}
+
+
+// Rounded circular disc with beveled edges (VisionOS-style)
+function RoundedDisc({
+  radius = 0.10,
+  depth = 0.02,
+  bevel = 0.006,
+  color = '#ffffff',
+  ...props
+}: {
+  radius?: number
+  depth?: number
+  bevel?: number
+  color?: string
+  [key: string]: any
+}) {
+  const shape = useMemo(() => {
+    const s = new THREE.Shape()
+    s.absarc(0, 0, radius, 0, Math.PI * 2, false)
+    return s
+  }, [radius])
+
+  const extrude = useMemo(
+    () => ({
+      depth,
+      bevelEnabled: true,
+      bevelSegments: 24,
+      bevelSize: bevel,
+      bevelThickness: bevel,
+      curveSegments: 512,
+      steps: 1
+    }),
+    [depth, bevel]
+  )
+
+  return (
+    <mesh
+      rotation={[0, 0, 0]}
+      castShadow
+      receiveShadow
+      {...props}
+    >
+      <extrudeGeometry args={[shape, extrude]} />
+      <meshStandardMaterial
+        color={color}
+        metalness={0.0}
+        roughness={1.0}
+      />
+    </mesh>
+  )
+}
+
+// Simple 3D Person Icon - sphere head + semicircle body
+function PersonIcon() {
+  return (
+    <group position={[0, 0, 0.02]} rotation={[0, 0, 0]} scale={1.5}>
+      {/* Head - sphere */}
+  <mesh position={[0, 0.025, 0]} castShadow>
+    {/* Sphere radius: increase to make head bigger (e.g., 0.02), decrease for smaller (e.g., 0.01) */}
+    <sphereGeometry args={[0.015, 32, 32]} />
+    <meshStandardMaterial color="#D4A574" metalness={0.0} roughness={1.0} />
+  </mesh>
+  {/* Body - flattened sphere (semicircle shape) */}
+  {/* scale: [width, height, depth] - adjust to change body proportions */}
+  <mesh position={[0, -0.01, 0]} scale={[1.2, 0.6, 1]} castShadow>
+    {/* Sphere radius: increase to make body bigger overall (e.g., 0.04), decrease for smaller (e.g., 0.02) */}
+    <sphereGeometry args={[0.03, 32, 32]} />
+    <meshStandardMaterial color="#CC5500" metalness={0.0} roughness={1.0} />
+  </mesh>
+    </group>
+  )
+}
+
+// 3D Folder Icon - warm yellow folder with white interior
+function FolderIcon() {
+  return (
+    <group position={[0, 0, 0.02]} rotation={[0, 0, 0]} scale={[2.25, 2.25, 2.25]}>
+      {/* Back panel - slightly raised */}
+      <RoundedBox 
+        position={[0, 0, 0.004]} 
+        args={[0.06, 0.045, 0.008]} 
+        radius={0.003}
+        smoothness={4}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#DAA520" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+      
+      {/* Front panel - slightly lower to show white interior */}
+      <RoundedBox 
+        position={[0, -0.002, 0]} 
+        args={[0.06, 0.043, 0.008]} 
+        radius={0.003}
+        smoothness={4}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#DAA520" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+      
+      {/* White interior - visible between panels */}
+      <RoundedBox 
+        position={[0, 0.01, 0.002]} 
+        args={[0.058, 0.01, 0.004]} 
+        radius={0.002}
+        smoothness={2}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#FFFFFF" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+      
+      {/* Tab on upper left */}
+      <RoundedBox 
+        position={[-0.02, 0.02, 0.004]} 
+        args={[0.015, 0.008, 0.008]} 
+        radius={0.002}
+        smoothness={2}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#DAA520" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+    </group>
+  )
+}
+
+// 3D Paper Icon - light grey document with folded corner and text lines
+function PaperIcon() {
+  return (
+    <group position={[0, 0, 0.02]} rotation={[0, 0, 0]} scale={[2, 2, 2]}>
+      {/* Main paper body - light grey with rounded edges */}
+      <RoundedBox 
+        position={[0, 0, 0]} 
+        args={[0.05, 0.06, 0.006]} 
+        radius={0.002}
+        smoothness={4}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#E8E8E8" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+      
+      {/* Text lines - horizontal grey bars */}
+      {/* Top line - shortest */}
+      <RoundedBox 
+        position={[-0.01, 0.015, 0.0035]} 
+        args={[0.02, 0.002, 0.003]} 
+        radius={0.0005}
+        smoothness={2}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#808080" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+      
+      {/* Second line - longer */}
+      <RoundedBox 
+        position={[0, 0.005, 0.0035]} 
+        args={[0.03, 0.002, 0.003]} 
+        radius={0.0005}
+        smoothness={2}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#808080" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+      
+      {/* Third line - similar length */}
+      <RoundedBox 
+        position={[0, -0.005, 0.0035]} 
+        args={[0.03, 0.002, 0.003]} 
+        radius={0.0005}
+        smoothness={2}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#808080" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+      
+      {/* Fourth line - longest */}
+      <RoundedBox 
+        position={[0, -0.015, 0.0035]} 
+        args={[0.04, 0.002, 0.003]} 
+        radius={0.0005}
+        smoothness={2}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#808080" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+    </group>
+  )
+}
+
+// 3D Envelope Icon - classic envelope with triangular top flap
+function EnvelopeIcon() {
+  return (
+    <group position={[0, 0, 0.02]} rotation={[0, 0, 0]} scale={[1.5, 1.5, 1.5]}>
+      {/* Main envelope body - simple rectangle */}
+      <RoundedBox 
+        position={[0, 0, 0]} 
+        args={[0.06, 0.045, 0.012]} 
+        radius={0.003}
+        smoothness={4}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#FFFFFF" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+      
+      {/* Top triangular flap - 3D upside down triangle in front */}
+      <group position={[-0.0005, 0.018, 0.0003]} rotation={[-Math.PI * 0.2, 0, 0]}>
+        {/* Front face */}
+        <mesh castShadow receiveShadow>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={3}
+              array={new Float32Array([
+                -0.03, 0, 0.008,      // Top left
+                0.03, 0, 0.008,       // Top right
+                0, -0.02, 0.008       // Bottom point (upside down)
+              ])}
+              itemSize={3}
+            />
+            <bufferAttribute
+              attach="attributes-normal"
+              count={3}
+              array={new Float32Array([
+                0, 0, 1,
+                0, 0, 1,
+                0, 0, 1
+              ])}
+              itemSize={3}
+            />
+            <bufferAttribute
+              attach="index"
+              count={3}
+              array={new Uint16Array([0, 1, 2])}
+              itemSize={1}
+            />
+          </bufferGeometry>
+          <meshStandardMaterial 
+            color="#FFFFFF" 
+            metalness={0.0} 
+            roughness={1.0}
+            emissive="#FFFFFF"
+            emissiveIntensity={3}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        {/* Back face */}
+        <mesh castShadow receiveShadow>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={3}
+              array={new Float32Array([
+                -0.03, 0, -0.008,      // Top left
+                0.03, 0, -0.008,       // Top right
+                0, -0.02, -0.008       // Bottom point (upside down)
+              ])}
+              itemSize={3}
+            />
+            <bufferAttribute
+              attach="attributes-normal"
+              count={3}
+              array={new Float32Array([
+                0, 0, -1,
+                0, 0, -1,
+                0, 0, -1
+              ])}
+              itemSize={3}
+            />
+            <bufferAttribute
+              attach="index"
+              count={3}
+              array={new Uint16Array([0, 2, 1])}
+              itemSize={1}
+            />
+          </bufferGeometry>
+          <meshStandardMaterial 
+            color="#FFFFFF" 
+            metalness={0.0} 
+            roughness={1.0}
+            emissive="#FFFFFF"
+            emissiveIntensity={0.8}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        {/* Side faces - creating thickness */}
+        {/* Left side */}
+        <mesh castShadow receiveShadow>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={4}
+              array={new Float32Array([
+                -0.03, 0, -0.008,
+                -0.03, 0, 0.008,
+                0, -0.02, 0.008,
+                0, -0.02, -0.008
+              ])}
+              itemSize={3}
+            />
+            <bufferAttribute
+              attach="attributes-normal"
+              count={4}
+              array={new Float32Array([
+                -0.866, 0.5, 0,
+                -0.866, 0.5, 0,
+                -0.866, 0.5, 0,
+                -0.866, 0.5, 0
+              ])}
+              itemSize={3}
+            />
+            <bufferAttribute
+              attach="index"
+              count={6}
+              array={new Uint16Array([0, 1, 2, 0, 2, 3])}
+              itemSize={1}
+            />
+          </bufferGeometry>
+          <meshStandardMaterial 
+            color="#FFFFFF" 
+            metalness={0.0} 
+            roughness={1.0}
+            emissive="#FFFFFF"
+            emissiveIntensity={0.8}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        {/* Right side */}
+        <mesh castShadow receiveShadow>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={4}
+              array={new Float32Array([
+                0.03, 0, -0.008,
+                0.03, 0, 0.008,
+                0, -0.02, 0.008,
+                0, -0.02, -0.008
+              ])}
+              itemSize={3}
+            />
+            <bufferAttribute
+              attach="attributes-normal"
+              count={4}
+              array={new Float32Array([
+                0.866, 0.5, 0,
+                0.866, 0.5, 0,
+                0.866, 0.5, 0,
+                0.866, 0.5, 0
+              ])}
+              itemSize={3}
+            />
+            <bufferAttribute
+              attach="index"
+              count={6}
+              array={new Uint16Array([0, 2, 1, 0, 3, 2])}
+              itemSize={1}
+            />
+          </bufferGeometry>
+          <meshStandardMaterial 
+            color="#A9A9A9" 
+            metalness={0.0} 
+            roughness={1.0}
+            emissive="#A9A9A9"
+            emissiveIntensity={0}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        {/* Top edge */}
+        <mesh castShadow receiveShadow>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={4}
+              array={new Float32Array([
+                -0.03, 0, -0.008,
+                -0.03, 0, 0.008,
+                0.03, 0, 0.008,
+                0.03, 0, -0.008
+              ])}
+              itemSize={3}
+            />
+            <bufferAttribute
+              attach="attributes-normal"
+              count={4}
+              array={new Float32Array([
+                0, 1, 0,
+                0, 1, 0,
+                0, 1, 0,
+                0, 1, 0
+              ])}
+              itemSize={3}
+            />
+            <bufferAttribute
+              attach="index"
+              count={6}
+              array={new Uint16Array([0, 1, 2, 0, 2, 3])}
+              itemSize={1}
+            />
+          </bufferGeometry>
+          <meshStandardMaterial 
+            color="#FFFFFF" 
+            metalness={0.0} 
+            roughness={1.0}
+            emissive="#A9A9A9"
+            emissiveIntensity={1}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// 3D Briefcase Icon - warm brown/orange-brown with black handle and clasp
+function BriefcaseIcon() {
+  return (
+    <group position={[0, 0, 0.02]} rotation={[0, 0, 0]} scale={[1.5, 1.5, 1.5]}>
+      {/* Main body - wider than tall */}
+      <RoundedBox 
+        position={[0, -0.012, 0]} 
+        args={[0.07, 0.048, 0.012]} 
+        radius={0.004}
+        smoothness={4}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#CD853F" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+      
+      {/* Front flap - slightly raised with curved bottom */}
+      <RoundedBox 
+        position={[0, -0.006, 0.008]} 
+        args={[0.068, 0.03, 0.004]} 
+        radius={0.003}
+        smoothness={4}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#CD853F" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+      
+      {/* Black clasp - vertical rectangular on front flap */}
+      <RoundedBox 
+        position={[0, -0.006, 0.012]} 
+        args={[0.008, 0.018, 0.004]} 
+        radius={0.001}
+        smoothness={2}
+        castShadow
+      >
+        <meshStandardMaterial 
+          color="#000000" 
+          metalness={0.0} 
+          roughness={1.0}
+        />
+      </RoundedBox>
+      
+      {/* Black handle - arched on top center, attached to briefcase */}
+      <group position={[0, 0.012, 0.006]}>
+        {/* Left connector - sits directly on top of briefcase */}
+        <RoundedBox 
+          position={[-0.02, 0.0045, 0]} 
+          args={[0.006, 0.009, 0.008]} 
+          radius={0.001}
+          smoothness={2}
+          castShadow
+        >
+          <meshStandardMaterial 
+            color="#000000" 
+            metalness={0.0} 
+            roughness={1.0}
+          />
+        </RoundedBox>
+        
+        {/* Right connector - sits directly on top of briefcase */}
+        <RoundedBox 
+          position={[0.02, 0.0045, 0]} 
+          args={[0.006, 0.009, 0.008]} 
+          radius={0.001}
+          smoothness={2}
+          castShadow
+        >
+          <meshStandardMaterial 
+            color="#000000" 
+            metalness={0.0} 
+            roughness={1.0}
+          />
+        </RoundedBox>
+        
+        {/* Arched handle - connects seamlessly to connectors, taller */}
+        <mesh position={[0, 0.009, 0]} rotation={[0, 0, 0]} castShadow>
+          <torusGeometry args={[0.02, 0.003, 8, 16, Math.PI]} />
+          <meshStandardMaterial 
+            color="#000000" 
+            metalness={0.0} 
+            roughness={1.0}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+function FloatingIcon({ position, color, iconType, label, onClick }: IconProps) {
+  const [hovered, setHovered] = useState(false)
+  const [clicked, setClicked] = useState(false)
+  
+  // Animate Z position and scale on hover and click
+  const { positionZ, scale } = useSpring({
+    positionZ: clicked ? position[2] - 0.03 : hovered ? position[2] - 0.015 : position[2],
+    scale: clicked ? 0.85 : hovered ? 0.9 : 1.0,
+    config: { tension: 300, friction: 20 }
+  })
+
+  const handleClick = () => {
+    setClicked(true)
+    setTimeout(() => setClicked(false), 150)
+    if (onClick) onClick()
+  }
+
+  return (
+    <animated.group 
+      position-x={position[0]}
+      position-y={position[1]}
+      position-z={positionZ}
+      scale={scale}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      onClick={handleClick}
+    >
+      {/* Base circular disc with beveled edges (VisionOS-style) */}
+      <RoundedDisc color={color} radius={0.10} depth={0.008} bevel={0.010} />
+      
+      {/* 3D Icon */}
+      {iconType === 'person' && <PersonIcon />}
+      {iconType === 'folder' && <FolderIcon />}
+      {iconType === 'briefcase' && <BriefcaseIcon />}
+      {iconType === 'paper' && <PaperIcon />}
+      {iconType === 'envelope' && <EnvelopeIcon />}
+      
+      {/* 3D Text Label */}
+      {label && (
+        <Text
+          position={[0, -0.15, 0]}
+          fontSize={0.025}
+          color="#FFFFFF"
+          anchorX="center"
+          outlineWidth={0.0002}
+          outlineColor="#ffffff"
+        >
+          {label}
+        </Text>
+      )}
+    </animated.group>
+  )
+}
+
+// Profile Image Component
+function ProfileImage({ imagePath, position, radius = 0.12 }: { imagePath: string; position: [number, number, number]; radius?: number }) {
+  const texture = useTexture(imagePath)
+  
+  // Calculate aspect ratio and adjust texture to fit properly in circle
+  useEffect(() => {
+    if (texture.image) {
+      const aspectRatio = texture.image.width / texture.image.height
+      
+      if (aspectRatio > 1) {
+        // Image is wider than tall
+        texture.repeat.set(1 / aspectRatio, 1)
+        texture.offset.set((1 - 1 / aspectRatio) / 2, -1)
+      } else {
+        // Image is taller than wide
+        texture.repeat.set(1, aspectRatio)
+        texture.offset.set(0, (1 - aspectRatio) / 1.75)
+      }
+      texture.needsUpdate = true
+    }
+  }, [texture])
+  
+  return (
+    <mesh
+      position={position}
+      castShadow
+    >
+      <circleGeometry args={[radius, 64]} />
+      <meshStandardMaterial 
+        map={texture}
+        metalness={0.0}
+        roughness={1.0}
+      />
+    </mesh>
+  )
+}
+
+// Home Toggle Button Component
+interface HomeToggleButtonProps {
+  position: [number, number, number]
+  showDots: boolean
+  onClick: () => void
+}
+
+function HomeToggleButton({ position, showDots, onClick }: HomeToggleButtonProps) {
+  const [hovered, setHovered] = useState(false)
+  
+  // Create house icon texture - simple triangle and square
+  const houseTexture = useMemo(() => {
+    if (showDots) return null
+    
+    const canvas = document.createElement('canvas')
+    canvas.width = 512
+    canvas.height = 512
+    const ctx = canvas.getContext('2d')
+    
+    if (!ctx) return null
+    
+    ctx.clearRect(0, 0, 512, 512)
+    ctx.fillStyle = 'white'
+    
+    // Square body
+    const bodyX = 128
+    const bodyY = 256
+    const bodyW = 256
+    const bodyH = 180
+    ctx.fillRect(bodyX, bodyY, bodyW, bodyH)
+    
+    // Triangle roof
+    ctx.beginPath()
+    ctx.moveTo(100, 256)      // bottom left
+    ctx.lineTo(256, 120)      // top center
+    ctx.lineTo(412, 256)      // bottom right
+    ctx.closePath()
+    ctx.fill()
+    
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.needsUpdate = true
+    return texture
+  }, [showDots])
+  
+  // Glassmorphism effect on hover
+  const buttonSpring = useSpring({
+    buttonOpacity: hovered ? 0.3 : 0.5,
+    buttonScale: hovered ? 1.05 : 1,
+    emissiveIntensity: hovered ? 0.2 : 0,
+    config: { tension: 300, friction: 20 }
+  })
+  
+  const buttonRadius = 0.04
+  const panelDepth = 0.01
+  
+  return (
+    <animated.group
+      position={position}
+      scale={buttonSpring.buttonScale}
+    >
+      <mesh 
+        castShadow 
+        receiveShadow 
+        rotation={[Math.PI / 2, 0, 0]}
+        onClick={onClick}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+      >
+        <cylinderGeometry args={[buttonRadius, buttonRadius, panelDepth, 32]} />
+        <animated.meshPhysicalMaterial
+          color="#FFFFFF"
+          metalness={0.1}
+          roughness={0.2}
+          opacity={buttonSpring.buttonOpacity}
+          transparent={true}
+          transmission={0.3}
+          thickness={0.5}
+          emissive="#FFFFFF"
+          emissiveIntensity={buttonSpring.emissiveIntensity}
+          clearcoat={1.0}
+          clearcoatRoughness={0.1}
+        />
+      </mesh>
+      
+      {/* Icon - either dots or house */}
+      {showDots ? (
+        // 4 squares in 2 rows x 2 columns - centered on button
+        <>
+          {(() => {
+            const squareSize = 0.0175        // Change size here
+            const squareColor = "#FFFFFF"   // Change color here
+            const rows = 2
+            const cols = 2
+            const horizontalSpacing = 0.025
+            const verticalSpacing = 0.025
+            
+            return (
+              <group position={[0, 0, panelDepth / 2 + 0.006]}>
+                {Array.from({ length: rows }).map((_, row) =>
+                  Array.from({ length: cols }).map((_, col) => (
+                    <lineSegments 
+                      key={`${row}-${col}`}
+                      position={[
+                        (col - 0.5) * horizontalSpacing,  // -0.5, 0.5 for 2 columns
+                        (0.5 - row) * verticalSpacing,     // 0.5, -0.5 for 2 rows
+                        0
+                      ]}
+                    >
+                      <edgesGeometry args={[new THREE.BoxGeometry(squareSize, squareSize, 0.001)]} />
+                      <lineBasicMaterial color={squareColor} linewidth={2} />
+                    </lineSegments>
+                  ))
+                )}
+              </group>
+            )
+          })()}
+        </>
+      ) : (
+        // House icon - manually drawn
+        houseTexture ? (
+          <mesh position={[0, 0.005, panelDepth / 2 + 0.005]}>
+            <planeGeometry args={[buttonRadius * 1.5, buttonRadius * 1.5]} />
+            <meshBasicMaterial 
+              map={houseTexture}
+              transparent={true}
+              opacity={0.9}
+            />
+          </mesh>
+        ) : null
+      )}
+    </animated.group>
+  )
+}
+
+// Social Media Button Component
+interface SocialButtonProps {
+  position: [number, number, number]
+  icon: 'github' | 'linkedin'
+  url: string
+}
+
+function SocialButton({ position, icon, url }: SocialButtonProps) {
+  const [hovered, setHovered] = useState(false)
+  
+  // Load logo texture - load actual image for GitHub
+  const [logoTexture, setLogoTexture] = useState<THREE.CanvasTexture | null>(null)
+  
+  useEffect(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 512
+    canvas.height = 512
+    const ctx = canvas.getContext('2d')
+    
+    if (!ctx) return
+    
+    ctx.clearRect(0, 0, 512, 512)
+    
+    if (icon === 'github') {
+      // Load GitHub octocat logo
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      // GitHub mark SVG as data URL (official octocat silhouette)
+      img.src = 'data:image/svg+xml;base64,' + btoa(`
+        <svg width="512" height="512" viewBox="0 0 16 16" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+      `)
+      
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, 512, 512)
+        const texture = new THREE.CanvasTexture(canvas)
+        texture.needsUpdate = true
+        setLogoTexture(texture)
+      }
+    } else {
+      // LinkedIn logo
+      ctx.fillStyle = '#FFFFFF'
+      ctx.font = 'bold 420px Arial'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('in', 256, 256)
+      
+      const texture = new THREE.CanvasTexture(canvas)
+      texture.needsUpdate = true
+      setLogoTexture(texture)
+    }
+  }, [icon])
+  
+  // Glassmorphism effect on hover
+  const buttonSpring = useSpring({
+    buttonOpacity: hovered ? 0.3 : 0.5,
+    buttonScale: hovered ? 1.05 : 1,
+    emissiveIntensity: hovered ? 0.2 : 0,
+    config: { tension: 300, friction: 20 }
+  })
+  
+  const buttonRadius = 0.035
+  const panelDepth = 0.01
+  
+  const handleClick = () => {
+    window.open(url, '_blank')
+  }
+  
+  return (
+    <animated.group
+      position={position}
+      scale={buttonSpring.buttonScale}
+      onClick={handleClick}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+    >
+      <mesh castShadow receiveShadow rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[buttonRadius, buttonRadius, panelDepth, 32]} />
+        <animated.meshPhysicalMaterial
+          color={icon === 'linkedin' ? '#0077B5' : '#520065'}
+          metalness={0.1}
+          roughness={0.2}
+          opacity={buttonSpring.buttonOpacity}
+          transparent={true}
+          transmission={0.3}
+          thickness={0.5}
+          emissive="#FFFFFF"
+          emissiveIntensity={buttonSpring.emissiveIntensity}
+          clearcoat={1.0}
+          clearcoatRoughness={0.1}
+        />
+      </mesh>
+      
+      {/* Logo Icon */}
+      {logoTexture && (
+        <mesh position={[0, 0, panelDepth / 2 + 0.005]}>
+          <circleGeometry args={[buttonRadius * 0.7, 32]} />
+          <meshBasicMaterial 
+            map={logoTexture}
+            transparent={true}
+            opacity={0.9}
+          />
+        </mesh>
+      )}
+    </animated.group>
+  )
+}
+
+// 3D Floating Rectangle Panel
+interface FloatingPanelProps {
+  label: string
+  onBack: () => void
+  content?: {
+    image?: string
+    text?: string
+    name?: string
+  }
+  hideBackButton?: boolean
+}
+
+function FloatingPanel({ label, onBack, content, hideBackButton = false }: FloatingPanelProps) {
+  const [backHovered, setBackHovered] = useState(false)
+  
+  // Panel dimensions - covers the icon area
+  const panelWidth = 1.2  // Width to cover all icons
+  const panelHeight = 0.9  // Height to cover all icons
+  const panelDepth = 0.02 // Same thickness as icon discs
+  
+  // Panel position - center of icon area
+  const panelPosition: [number, number, number] = [0.55, 0.375, 1]
+  
+  // Back button properties
+  const backButtonRadius = 0.025
+  const backButtonPosition: [number, number, number] = [
+    panelPosition[0] - panelWidth / 2 + 0.05,  // Top-left corner
+    panelPosition[1] + panelHeight / 2 - 0.05,
+    panelPosition[2] + 0.02  // Slightly in front of panel
+  ]
+  
+  // Animate panel appearance
+  const { scale, opacity } = useSpring({
+    from: { scale: 0.8, opacity: 0 },
+    to: { scale: 1, opacity: 1 },
+    config: { tension: 280, friction: 26 }
+  })
+  
+  // Glassmorphism effect on hover
+  const glassSpring = useSpring({
+    buttonOpacity: backHovered ? 0.3 : 0.5,
+    buttonScale: backHovered ? 1.05 : 1,
+    emissiveIntensity: backHovered ? 0.2 : 0,
+    config: { tension: 300, friction: 20 }
+  })
+  
+  return (
+    <animated.group scale={scale}>
+      {/* Main Panel - Floating Transparent Glass with Custom Rounded Shape */}
+      <mesh 
+        position={panelPosition}
+        castShadow
+        receiveShadow
+        onClick={(e) => e.stopPropagation()}
+      >
+        <extrudeGeometry args={[
+          (() => {
+            const width = panelWidth
+            const height = panelHeight
+            const radius = 0.08  // Large rounded corners!
+            
+            // Create rounded rectangle shape
+            const shape = new THREE.Shape()
+            shape.moveTo(-width/2 + radius, -height/2)
+            shape.lineTo(width/2 - radius, -height/2)
+            shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
+            shape.lineTo(width/2, height/2 - radius)
+            shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
+            shape.lineTo(-width/2 + radius, height/2)
+            shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
+            shape.lineTo(-width/2, -height/2 + radius)
+            shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
+            shape.closePath()
+            
+            return shape
+          })(),
+          {
+            depth: 0.01,
+            bevelEnabled: false,
+            curveSegments: 32
+          }
+        ]} />
+        <animated.meshPhysicalMaterial
+          color="#F0F0F0"
+          metalness={0}
+          roughness={0.5}
+          opacity={opacity.to(o => o * 0.5)}
+          transparent={true}
+          transmission={0.5}
+          thickness={3.5}
+          clearcoat={1}
+          clearcoatRoughness={1}
+          ior={1}
+          attenuationDistance={0.1}
+          attenuationColor="#FFFFFF"
+        />
+      </mesh>
+      
+      {/* Back Button - Glassmorphic circular disc (hidden for home panel) */}
+      {!hideBackButton && (
+        <animated.group
+          position={backButtonPosition}
+          scale={glassSpring.buttonScale}
+          onClick={onBack}
+          onPointerEnter={() => setBackHovered(true)}
+          onPointerLeave={() => setBackHovered(false)}
+        >
+          <mesh castShadow receiveShadow rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[backButtonRadius, backButtonRadius, panelDepth, 32]} />
+            <animated.meshPhysicalMaterial
+              color="#808080"
+              metalness={0.1}
+              roughness={0.2}
+              opacity={glassSpring.buttonOpacity}
+              transparent={true}
+              transmission={0.3}
+              thickness={0.5}
+              emissive="#FFFFFF"
+              emissiveIntensity={glassSpring.emissiveIntensity}
+              clearcoat={1.0}
+              clearcoatRoughness={0.1}
+            />
+          </mesh>
+          
+          {/* Back Arrow - Simple left arrow */}
+          <Text
+            position={[0, 0, panelDepth / 2 + 0.005]}
+            fontSize={0.025}
+            color="#FFFFFF"
+            anchorX="center"
+            anchorY="middle"
+          >
+            ←
+          </Text>
+        </animated.group>
+      )}
+      
+      {/* Content Area */}
+      {content && (
+        <group onClick={(e) => e.stopPropagation()}>
+          {/* Greeting Section - "Hi I'm" */}
+          {content.name && (
+            <group>
+              {/* Profile Image - Circular on the right side - BIGGER */}
+              {content.image && (
+                <>
+                  <ProfileImage 
+                    imagePath={content.image}
+                    position={[panelPosition[0] + 0.2, panelPosition[1] + 0.05, panelPosition[2] + 0.015]}
+                    radius={0.25}
+                  />
+                  
+                  {/* Social Media Buttons Below Profile */}
+                  <SocialButton
+                    position={[panelPosition[0] + 0.13, panelPosition[1] - 0.275, panelPosition[2] + 0.02]}
+                    icon="github"
+                    url="https://github.com/legitHacker23"
+                  />
+                  <SocialButton
+                    position={[panelPosition[0] + 0.27, panelPosition[1] - 0.275, panelPosition[2] + 0.02]}
+                    icon="linkedin"
+                    url="https://www.linkedin.com/in/noahmndza/"
+                  />
+                </>
+              )}
+              
+              {/* "Greeting */}
+              <Text
+                position={[panelPosition[0] - 0.425, panelPosition[1] + 0.265, panelPosition[2] + 0.02]}
+                fontSize={0.04}
+                color="#FFFFFF"
+                anchorX="center"
+                anchorY="middle"
+              >
+                Hello, I'm
+              </Text>
+              
+              {/* Glassmorphic rounded rectangle in front of name */}
+              <mesh 
+                position={[panelPosition[0] - 0.335, panelPosition[1] + 0.175, panelPosition[2] + 0.01]}
+                castShadow
+                receiveShadow
+              >
+                <extrudeGeometry args={[
+                  (() => {
+                    const width = 0.37
+                    const height = 0.07
+                    const radius = 0.03
+                    
+                    const shape = new THREE.Shape()
+                    shape.moveTo(-width/2 + radius, -height/2)
+                    shape.lineTo(width/2 - radius, -height/2)
+                    shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
+                    shape.lineTo(width/2, height/2 - radius)
+                    shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
+                    shape.lineTo(-width/2 + radius, height/2)
+                    shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
+                    shape.lineTo(-width/2, -height/2 + radius)
+                    shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
+                    shape.closePath()
+
+                    return shape
+                  })(),
+                  {
+                    depth: 0.01,
+                    bevelEnabled: false,
+                    curveSegments: 32
+                  }
+                ]} />
+                <meshPhysicalMaterial
+                  color="#F0F0F0"
+                  metalness={0.0}
+                  roughness={0.5}
+                  opacity={0.5}
+                  transparent={true}
+                  transmission={0.7}
+                  thickness={2.0}
+                  clearcoat={1.0}
+                  clearcoatRoughness={0.6}
+                  ior={2}
+                  attenuationDistance={0.5}
+                  attenuationColor="#FFFFFF"
+                  depthWrite={false}
+                />
+              </mesh>
+              
+              {/* Name text on top of glass oval - shifted left to match */}
+              <Text
+                position={[panelPosition[0] - 0.335, panelPosition[1] + 0.175, panelPosition[2] + 0.015]}
+                fontSize={0.04}
+                color="#FFFFFF"
+                anchorX="center"
+                anchorY="middle"
+                fontWeight="bold"
+              >
+                {content.name}
+              </Text>
+            </group>
+          )}
+          
+          {/* Content Text */}
+          {content.text && (
+            <Text
+              position={[panelPosition[0] - 0.2925, panelPosition[1] - 0.075, panelPosition[2] + 0.02]}
+              fontSize={0.027}
+              color="#FFFFFF"
+              anchorX="center"
+              anchorY="middle"
+              maxWidth={panelWidth - 0.75}
+              lineHeight={1.3}
+              textAlign="left"
+            >
+              {content.text}
+            </Text>
+          )}
+        </group>
+      )}
+    </animated.group>
+  )
+}
+
+export function FloatingIcons() {
+  // State to track home vs icons view
+  const [showingHome, setShowingHome] = useState(true)
+  
+  const [panelState, setPanelState] = useState<{ 
+    isOpen: boolean
+    label: string
+    content?: {
+      image?: string
+      text?: string
+      name?: string
+    }
+  }>({
+    isOpen: false,
+    label: ''
+  })
+  
+  // Define content for each panel
+  const panelContent: Record<string, { image?: string; text?: string; name?: string }> = {
+    'Home': {
+      name: 'Noah Mendoza',
+      image: '/assets/profilepic.png',
+      text: 'I\'m a Data Science student at the University of Texas at Austin. My experience spans MIT, Harvard, and Rice University.\n\nI\'ve built systems ranging from a posture detection app with 98% accuracy to an AWS Youtube trend prediction platform processing over 75,000 ingestion events.'
+    },
+    'About': {
+      name: 'Noah Mendoza',
+      image: '/assets/profilepic.png',
+      text: 'I\'m a Data Science student at the University of Texas at Austin. My experience spans MIT, Harvard, and Rice University.\n\nI\'ve built systems ranging from a posture detection app with 98% accuracy to an AWS Youtube trend prediction platform processing over 75,000 ingestion events.'
+    },
+    'Experience': {
+      text: 'Experience content coming soon...'
+    },
+    'Work': {
+      text: 'Work portfolio coming soon...'
+    },
+    'Resume': {
+      text: 'Resume content coming soon...'
+    },
+    'Contact Me': {
+      text: 'Contact information coming soon...'
+    }
+  }
+
+  // Icon positions arranged in a grid pattern, centered in view
+  // Position format: [X, Y, Z]
+  // X: left(-) / right(+)
+  // Y: down(-) / up(+)
+  // Z: toward camera(-) / away from camera(+)
+  
+  const icons = [
+    // Top row (2 icons)
+    { position: [0.375, 0.55, 1] as [number, number, number], color: '#FFFFFF', iconType: 'person', label: 'About' }, // Left-top - Person icon
+    { position: [0.725, 0.55, 1] as [number, number, number], color: '#FFFFFF', iconType: 'folder', label: 'Experience' }, // Right-top - Folder icon
+    
+    // Bottom row (3 icons)
+    { position: [0.2, 0.2, 1] as [number, number, number], color: '#FFFFFF', iconType: 'briefcase', label: 'Work' },    // Left-bottom - Briefcase icon
+    { position: [0.55, 0.2, 1] as [number, number, number], color: '#6D8196', iconType: 'paper', label: 'Resume' }, // Center-bottom - Paper icon
+    { position: [0.9, 0.2, 1] as [number, number, number], color: '#6D8196', iconType: 'envelope', label: 'Contact Me' },  // Right-bottom - Envelope icon
+  ]
+
+  const handleIconClick = (label: string) => {
+    setPanelState({ 
+      isOpen: true, 
+      label,
+      content: panelContent[label]
+    })
+  }
+
+  const handleBack = () => {
+    setPanelState({ isOpen: false, label: '' })
+  }
+
+  const handleToggleHome = () => {
+    if (showingHome) {
+      // Going from home to icons
+      setShowingHome(false)
+    } else {
+      // Going from icons to home
+      setShowingHome(true)
+      // Close any open panel
+      setPanelState({ isOpen: false, label: '' })
+    }
+  }
+
+  // Animate icons group - same as panel animation
+  const iconsSpring = useSpring({
+    from: { scale: 0.8 },
+    to: { scale: !showingHome && !panelState.isOpen ? 1 : 0.8 },
+    reset: !showingHome && !panelState.isOpen,
+    config: { tension: 280, friction: 26 }
+  })
+
+  return (
+    <group>
+      {/* Home Panel - shown initially and when showingHome is true */}
+      {showingHome && !panelState.isOpen && (
+        <FloatingPanel
+          label="Home"
+          onBack={() => {}} // No back button for home panel
+          content={panelContent['Home']}
+          hideBackButton={true}
+        />
+      )}
+      
+      {/* Icons group - shown when not showing home and no panel is open */}
+      {!showingHome && !panelState.isOpen && (
+        <animated.group 
+          scale={iconsSpring.scale}
+          position={[0.2, 0.55, 0]}
+        >
+          {icons.map((icon, index) => (
+            <FloatingIcon
+              key={index}
+              position={[icon.position[0] - 0.2, icon.position[1] - 0.55, icon.position[2]]}
+              color={icon.color}
+              iconType={icon.iconType}
+              label={icon.label}
+              onClick={() => handleIconClick(icon.label)}
+            />
+          ))}
+        </animated.group>
+      )}
+      
+      {/* Show selected panel when open (from clicking an icon) */}
+      {!showingHome && panelState.isOpen && (
+        <FloatingPanel
+          label={panelState.label}
+          onBack={handleBack}
+          content={panelState.content}
+        />
+      )}
+      
+      {/* Home Toggle Button - always visible */}
+      <HomeToggleButton
+        position={[0.55, -0.2, 1]}
+        showDots={showingHome}
+        onClick={handleToggleHome}
+      />    </group>
+  )
+}
+
