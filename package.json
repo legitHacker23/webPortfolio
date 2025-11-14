@@ -8,18 +8,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
+    "@react-spring/three": "^9.7.3",
+    "@react-three/drei": "^9.88.13",
+    "@react-three/fiber": "^8.15.11",
+    "@react-three/postprocessing": "^2.15.11",
+    "@react-three/rapier": "^1.2.1",
+    "howler": "^2.2.4",
+    "latest-react-3d-icons": "^1.0.0",
+    "postprocessing": "^6.35.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "three": "^0.160.0",
-    "@react-three/fiber": "^8.15.11",
-    "@react-three/drei": "^9.88.13",
-    "@react-three/postprocessing": "^2.15.11",
-    "postprocessing": "^6.35.0",
-    "@react-three/rapier": "^1.2.1",
-    "@react-spring/three": "^9.7.3",
-    "latest-react-3d-icons": "^1.0.0",
-    "zustand": "^4.4.7",
-    "howler": "^2.2.4"
+    "zustand": "^4.4.7"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
@@ -29,5 +30,3 @@
     "vite": "^5.0.8"
   }
 }
-
-

@@ -3,6 +3,7 @@ import { useSpring, animated } from '@react-spring/three'
 import { RoundedBox, Text, MeshTransmissionMaterial, useTexture, useGLTF } from '@react-three/drei'
 import { useLoader } from '@react-three/fiber'
 import * as THREE from 'three'
+import emailjs from '@emailjs/browser'
 
 interface IconProps {
   position: [number, number, number]
@@ -1069,6 +1070,444 @@ function SocialButton({ position, icon, url }: SocialButtonProps) {
   )
 }
 
+// Contact Form Panel Component
+interface ContactFormPanelProps {
+  onBack: () => void
+}
+
+function ContactFormPanel({ onBack }: ContactFormPanelProps) {
+  const [backHovered, setBackHovered] = useState(false)
+  const [activeField, setActiveField] = useState<'name' | 'email' | 'message' | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  })
+  
+  // Panel dimensions - same as FloatingPanel
+  const panelWidth = 1.2
+  const panelHeight = 0.9
+  const panelPosition: [number, number, number] = [0.55, 0.375, 1]
+  
+  // Back button properties
+  const backButtonRadius = 0.025
+  const backButtonPosition: [number, number, number] = [
+    panelPosition[0] - panelWidth / 2 + 0.05,
+    panelPosition[1] + panelHeight / 2 - 0.05,
+    panelPosition[2] + 0.02
+  ]
+  
+  // Animate panel appearance
+  const { scale, opacity } = useSpring({
+    from: { scale: 0.8, opacity: 0 },
+    to: { scale: 1, opacity: 1 },
+    config: { tension: 280, friction: 26 }
+  })
+  
+  const glassSpring = useSpring({
+    buttonOpacity: backHovered ? 0.3 : 0.5,
+    buttonScale: backHovered ? 1.05 : 1,
+    emissiveIntensity: backHovered ? 0.2 : 0,
+    config: { tension: 300, friction: 20 }
+  })
+  
+  // Handle keyboard input when a field is active
+  useEffect(() => {
+    if (!activeField) return
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Backspace') {
+        setFormData(prev => ({
+          ...prev,
+          [activeField]: prev[activeField].slice(0, -1)
+        }))
+      } else if (e.key === 'Enter' && activeField !== 'message') {
+        // Move to next field or submit
+        if (activeField === 'name') {
+          setActiveField('email')
+        } else if (activeField === 'email') {
+          setActiveField('message')
+        }
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+        // Regular character input
+        setFormData(prev => ({
+          ...prev,
+          [activeField]: prev[activeField] + e.key
+        }))
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeField])
+  
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.email || !formData.message) return
+    if (isSubmitting) return
+    
+    setIsSubmitting(true)
+    
+    try {
+      await emailjs.send(
+        'service_znehpa8',      // Replace with your EmailJS service ID
+        'template_eyn1wkg',     // Replace with your EmailJS template ID
+        {
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+          to_email: 'nbmendoza1432@gmail.com', // Replace with your email address
+        },
+        'jleOZNLVNkX7SjI01'       // Replace with your EmailJS public key
+      )
+      
+      // Success - reset form
+      setFormData({ name: '', email: '', message: '' })
+      setActiveField(null)
+    } catch (error) {
+      // Error handling - you can add user feedback here if needed
+      console.error('Failed to send email:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+  
+  // Input field component
+  const InputField = ({ 
+    label, 
+    value, 
+    field, 
+    position, 
+    width = 0.5, 
+    height = 0.06,
+    multiline = false 
+  }: { 
+    label: string
+    value: string
+    field: 'name' | 'email' | 'message'
+    position: [number, number, number]
+    width?: number
+    height?: number
+    multiline?: boolean
+  }) => {
+    const isActive = activeField === field
+    const [hovered, setHovered] = useState(false)
+    
+    const fieldSpring = useSpring({
+      opacity: isActive ? 0.6 : hovered ? 0.55 : 0.5,
+      scale: isActive ? 1.02 : hovered ? 1.01 : 1,
+      config: { tension: 300, friction: 20 }
+    })
+    
+    return (
+      <group position={position}>
+        {/* Glassmorphic input field background */}
+        <animated.mesh 
+          position={[0, 0, 0.01]}
+          scale={fieldSpring.scale}
+          castShadow
+          receiveShadow
+          onClick={(e) => {
+            e.stopPropagation()
+            setActiveField(field)
+          }}
+          onPointerEnter={() => setHovered(true)}
+          onPointerLeave={() => setHovered(false)}
+        >
+          <extrudeGeometry args={[
+            (() => {
+              const radius = 0.02
+              const shape = new THREE.Shape()
+              shape.moveTo(-width/2 + radius, -height/2)
+              shape.lineTo(width/2 - radius, -height/2)
+              shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
+              shape.lineTo(width/2, height/2 - radius)
+              shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
+              shape.lineTo(-width/2 + radius, height/2)
+              shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
+              shape.lineTo(-width/2, -height/2 + radius)
+              shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
+              shape.closePath()
+              return shape
+            })(),
+            {
+              depth: 0.01,
+              bevelEnabled: false,
+              curveSegments: 32
+            }
+          ]} />
+          <animated.meshPhysicalMaterial
+            color="#000000"
+            metalness={0.0}
+            roughness={0.5}
+            opacity={fieldSpring.opacity}
+            transparent={true}
+            transmission={0}
+            thickness={2.0}
+            clearcoat={1.0}
+            clearcoatRoughness={0.6}
+            ior={2}
+            attenuationDistance={0.5}
+            attenuationColor="#FFFFFF"
+            depthWrite={false}
+          />
+        </animated.mesh>
+        
+        {/* Label */}
+        <Text
+          position={[-width/2 + 0.01, height/2 + 0.03, 0.015]}
+          fontSize={0.022}
+          color="#FFFFFF"
+          anchorX="left"
+          anchorY="bottom"
+        >
+          {label}
+        </Text>
+        
+        {/* Input value text */}
+        <Text
+          position={[-width/2 + 0.02, 0, 0.015]}
+          fontSize={0.025}
+          color="#FFFFFF"
+          anchorX="left"
+          anchorY="middle"
+          maxWidth={width - 0.04}
+        >
+          {value}
+        </Text>
+        
+        {/* Cursor when active - positioned after text */}
+        {isActive && (
+          <mesh position={[-width/2 + 0.02 + (value.length * 0.015), 0, 0.015]}>
+            <boxGeometry args={[0.002, 0.03, 0.001]} />
+            <meshBasicMaterial color="#FFFFFF" />
+          </mesh>
+        )}
+      </group>
+    )
+  }
+  
+  // Send button component
+  const SendButton = ({ position }: { position: [number, number, number] }) => {
+    const [hovered, setHovered] = useState(false)
+    const [clicked, setClicked] = useState(false)
+    
+    const buttonSpring = useSpring({
+      buttonOpacity: hovered ? 0.4 : 0.5,
+      buttonScale: clicked ? 0.95 : hovered ? 1.05 : 1,
+      emissiveIntensity: hovered ? 0.3 : 0,
+      config: { tension: 300, friction: 20 }
+    })
+    
+    const buttonWidth = 0.3
+    const buttonHeight = 0.06
+    
+    return (
+      <animated.group
+        position={position}
+        scale={buttonSpring.buttonScale}
+        onClick={(e) => {
+          e.stopPropagation()
+          setClicked(true)
+          setTimeout(() => {
+            setClicked(false)
+            handleSubmit()
+          }, 150)
+        }}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+      >
+        <mesh castShadow receiveShadow>
+          <extrudeGeometry args={[
+            (() => {
+              const radius = 0.02
+              const shape = new THREE.Shape()
+              shape.moveTo(-buttonWidth/2 + radius, -buttonHeight/2)
+              shape.lineTo(buttonWidth/2 - radius, -buttonHeight/2)
+              shape.quadraticCurveTo(buttonWidth/2, -buttonHeight/2, buttonWidth/2, -buttonHeight/2 + radius)
+              shape.lineTo(buttonWidth/2, buttonHeight/2 - radius)
+              shape.quadraticCurveTo(buttonWidth/2, buttonHeight/2, buttonWidth/2 - radius, buttonHeight/2)
+              shape.lineTo(-buttonWidth/2 + radius, buttonHeight/2)
+              shape.quadraticCurveTo(-buttonWidth/2, buttonHeight/2, -buttonWidth/2, buttonHeight/2 - radius)
+              shape.lineTo(-buttonWidth/2, -buttonHeight/2 + radius)
+              shape.quadraticCurveTo(-buttonWidth/2, -buttonHeight/2, -buttonWidth/2 + radius, -buttonHeight/2)
+              shape.closePath()
+              return shape
+            })(),
+            {
+              depth: 0.01,
+              bevelEnabled: false,
+              curveSegments: 32
+            }
+          ]} />
+          <animated.meshPhysicalMaterial
+            color="#4A90E2"
+            metalness={0.0}
+            roughness={0}
+            opacity={buttonSpring.buttonOpacity}
+            transparent={true}
+            transmission={0}
+            thickness={3.0}
+            clearcoat={1.0}
+            clearcoatRoughness={0}
+            ior={1}
+            emissive="#4A90E2"
+            emissiveIntensity={buttonSpring.emissiveIntensity}
+            depthWrite={false}
+          />
+        </mesh>
+        
+        <Text
+          position={[0, 0, 0.015]}
+          fontSize={0.025}
+          color="#FFFFFF"
+          anchorX="center"
+          anchorY="middle"
+          fontWeight="bold"
+        >
+          Send
+        </Text>
+      </animated.group>
+    )
+  }
+  
+  return (
+    <animated.group scale={scale}>
+      {/* Main Panel - same as FloatingPanel */}
+      <mesh 
+        position={panelPosition}
+        castShadow
+        receiveShadow
+        onClick={(e) => {
+          e.stopPropagation()
+          setActiveField(null)
+        }}
+      >
+        <extrudeGeometry args={[
+          (() => {
+            const width = panelWidth
+            const height = panelHeight
+            const radius = 0.08
+            
+            const shape = new THREE.Shape()
+            shape.moveTo(-width/2 + radius, -height/2)
+            shape.lineTo(width/2 - radius, -height/2)
+            shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
+            shape.lineTo(width/2, height/2 - radius)
+            shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
+            shape.lineTo(-width/2 + radius, height/2)
+            shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
+            shape.lineTo(-width/2, -height/2 + radius)
+            shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
+            shape.closePath()
+            
+            return shape
+          })(),
+          {
+            depth: 0.01,
+            bevelEnabled: false,
+            curveSegments: 32
+          }
+        ]} />
+        <animated.meshPhysicalMaterial
+          color="#F0F0F0"
+          metalness={0}
+          roughness={0.5}
+          opacity={opacity.to(o => o * 0.5)}
+          transparent={true}
+          transmission={0.5}
+          thickness={3.5}
+          clearcoat={1}
+          clearcoatRoughness={1}
+          ior={1}
+          attenuationDistance={0.1}
+          attenuationColor="#FFFFFF"
+        />
+      </mesh>
+      
+      {/* Back Button */}
+      <animated.group
+        position={backButtonPosition}
+        scale={glassSpring.buttonScale}
+        onClick={onBack}
+        onPointerEnter={() => setBackHovered(true)}
+        onPointerLeave={() => setBackHovered(false)}
+      >
+        <mesh castShadow receiveShadow rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[backButtonRadius, backButtonRadius, 0.02, 32]} />
+          <animated.meshPhysicalMaterial
+            color="#808080"
+            metalness={0.1}
+            roughness={0.2}
+            opacity={glassSpring.buttonOpacity}
+            transparent={true}
+            transmission={0}
+            thickness={0.5}
+            emissive="#FFFFFF"
+            emissiveIntensity={glassSpring.emissiveIntensity}
+            clearcoat={1.0}
+            clearcoatRoughness={0.1}
+          />
+        </mesh>
+        
+        <Text
+          position={[0, 0, 0.02]}
+          fontSize={0.025}
+          color="#FFFFFF"
+          anchorX="center"
+          anchorY="middle"
+        >
+          ←
+        </Text>
+      </animated.group>
+      
+      {/* Title */}
+      <Text
+        position={[panelPosition[0], panelPosition[1] + 0.35, panelPosition[2] + 0.02]}
+        fontSize={0.05}
+        color="#FFFFFF"
+        anchorX="center"
+        anchorY="middle"
+        fontWeight="bold"
+      >
+        Contact Me
+      </Text>
+      
+      {/* Input Fields */}
+      <InputField
+        label="Name"
+        value={formData.name}
+        field="name"
+        position={[panelPosition[0] - 0.25, panelPosition[1] + 0.2, panelPosition[2] + 0.02]}
+        width={0.5}
+        height={0.06}
+      />
+      
+      <InputField
+        label="Email"
+        value={formData.email}
+        field="email"
+        position={[panelPosition[0] - 0.25, panelPosition[1] + 0.05, panelPosition[2] + 0.02]}
+        width={0.5}
+        height={0.06}
+      />
+      
+      <InputField
+        label="Message"
+        value={formData.message}
+        field="message"
+        position={[panelPosition[0] - 0.25, panelPosition[1] - 0.15, panelPosition[2] + 0.02]}
+        width={0.5}
+        height={0.12}
+        multiline={true}
+      />
+      
+      {/* Send Button */}
+      <SendButton position={[panelPosition[0] - 0.35, panelPosition[1] - 0.3, panelPosition[2] + 0.02]} />
+    </animated.group>
+  )
+}
+
 // 3D Floating Rectangle Panel
 interface FloatingPanelProps {
   label: string
@@ -1492,11 +1931,17 @@ export function FloatingIcons() {
       
       {/* Show selected panel when open (from clicking an icon) */}
       {!showingHome && panelState.isOpen && (
-        <FloatingPanel
-          label={panelState.label}
-          onBack={handleBack}
-          content={panelState.content}
-        />
+        panelState.label === 'Contact Me' ? (
+          <ContactFormPanel
+            onBack={handleBack}
+          />
+        ) : (
+          <FloatingPanel
+            label={panelState.label}
+            onBack={handleBack}
+            content={panelState.content}
+          />
+        )
       )}
       
       {/* Home Toggle Button - always visible */}
