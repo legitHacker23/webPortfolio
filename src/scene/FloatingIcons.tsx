@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, Suspense } from 'react'
 import { useSpring, animated } from '@react-spring/three'
-import { RoundedBox, Text, MeshTransmissionMaterial, useTexture } from '@react-three/drei'
+import { RoundedBox, Text, MeshTransmissionMaterial, useTexture, useGLTF } from '@react-three/drei'
 import { useLoader } from '@react-three/fiber'
 import * as THREE from 'three'
 
@@ -554,6 +554,184 @@ function BriefcaseIcon() {
         </mesh>
       </group>
     </group>
+  )
+}
+
+// GitHub Icon - loads GLB model (for use inside FloatingIcon)
+function GitHubIconModel() {
+  const { scene } = useGLTF('/assets/github.glb')
+  
+  useEffect(() => {
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true
+        child.receiveShadow = false
+      }
+    })
+  }, [scene])
+  
+  return (
+    <group position={[0, 0, -0.5]} scale={[2, 2, 2]}>
+      <primitive object={scene} />
+    </group>
+  )
+}
+
+function GitHubIcon() {
+  return (
+    <Suspense fallback={null}>
+      <GitHubIconModel />
+    </Suspense>
+  )
+}
+
+// LinkedIn Icon - loads GLB model (for use inside FloatingIcon)
+function LinkedInIconModel() {
+  const { scene } = useGLTF('/assets/linkedin.glb')
+  
+  useEffect(() => {
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true
+        child.receiveShadow = false
+      }
+    })
+  }, [scene])
+  
+  return (
+    <group position={[0, 0, 0.1]} scale={[0.15, 0.15, 0.15]}>
+      <primitive object={scene} />
+    </group>
+  )
+}
+
+function LinkedInIcon() {
+  return (
+    <Suspense fallback={null}>
+      <LinkedInIconModel />
+    </Suspense>
+  )
+}
+
+// Standalone GitHub Icon Component (no white disc base)
+function StandaloneGitHubIcon({ position, label, onClick }: { position: [number, number, number]; label: string; onClick?: () => void }) {
+  const [hovered, setHovered] = useState(false)
+  const [clicked, setClicked] = useState(false)
+  
+  const { scene } = useGLTF('/assets/github.glb')
+  
+  useEffect(() => {
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true
+        child.receiveShadow = false
+      }
+    })
+  }, [scene])
+  
+  const { positionZ, scale } = useSpring({
+    positionZ: clicked ? position[2] - 0.03 : hovered ? position[2] - 0.015 : position[2],
+    scale: clicked ? 1 : hovered ? 0.9 : 1.0,
+    config: { tension: 300, friction: 20 }
+  })
+
+  const handleClick = () => {
+    setClicked(true)
+    setTimeout(() => setClicked(false), 150)
+    if (onClick) onClick()
+  }
+
+  return (
+    <Suspense fallback={null}>
+      <animated.group 
+        position-x={position[0]}
+        position-y={position[1]}
+        position-z={positionZ}
+        scale={scale}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        onClick={handleClick}
+      >
+        <group position={[0,0,0.05]} scale={[0.4, 0.4, 0.4]} rotation={[-0.05 , -0.33, 0]}>
+          <primitive object={scene} />
+        </group>
+        
+        {/* 3D Text Label */}
+        {label && (
+          <Text
+            position={[0, -0.15, 0]}
+            fontSize={0.025}
+            color="#FFFFFF"
+            anchorX="center"
+            outlineWidth={0.0002}
+            outlineColor="#ffffff"
+          >
+            {label}
+          </Text>
+        )}
+      </animated.group>
+    </Suspense>
+  )
+}
+
+// Standalone LinkedIn Icon Component (no white disc base)
+function StandaloneLinkedInIcon({ position, label, onClick }: { position: [number, number, number]; label: string; onClick?: () => void }) {
+  const [hovered, setHovered] = useState(false)
+  const [clicked, setClicked] = useState(false)
+  
+  const { scene } = useGLTF('/assets/linkedin.glb')
+  
+  useEffect(() => {
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true
+        child.receiveShadow = false
+      }
+    })
+  }, [scene])
+  
+  const { positionZ, scale } = useSpring({
+    positionZ: clicked ? position[2] - 0.03 : hovered ? position[2] - 0.015 : position[2],
+    scale: clicked ? 0.85 : hovered ? 0.9 : 1.0,
+    config: { tension: 300, friction: 20 }
+  })
+
+  const handleClick = () => {
+    setClicked(true)
+    setTimeout(() => setClicked(false), 150)
+    if (onClick) onClick()
+  }
+
+  return (
+    <Suspense fallback={null}>
+      <animated.group 
+        position-x={position[0]}
+        position-y={position[1]}
+        position-z={positionZ}
+        scale={scale}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        onClick={handleClick}
+      >
+        <group position={[0,0, -0.01]} scale={[0.125, 0.125, 0.125]}>
+          <primitive object={scene} />
+        </group>
+        
+        {/* 3D Text Label */}
+        {label && (
+          <Text
+            position={[0, -0.15, 0]}
+            fontSize={0.025}
+            color="#FFFFFF"
+            anchorX="center"
+            outlineWidth={0.0002}
+            outlineColor="#ffffff"
+          >
+            {label}
+          </Text>
+        )}
+      </animated.group>
+    </Suspense>
   )
 }
 
@@ -1176,11 +1354,6 @@ export function FloatingIcons() {
       image: '/assets/profilepic.png',
       text: 'I\'m a Data Science student at the University of Texas at Austin. My experience spans MIT, Harvard, and Rice University.\n\nI\'ve built systems ranging from a posture detection app with 98% accuracy to an AWS Youtube trend prediction platform processing over 75,000 ingestion events.'
     },
-    'About': {
-      name: 'Noah Mendoza',
-      image: '/assets/profilepic.png',
-      text: 'I\'m a Data Science student at the University of Texas at Austin. My experience spans MIT, Harvard, and Rice University.\n\nI\'ve built systems ranging from a posture detection app with 98% accuracy to an AWS Youtube trend prediction platform processing over 75,000 ingestion events.'
-    },
     'Experience': {
       text: 'Experience content coming soon...'
     },
@@ -1201,18 +1374,35 @@ export function FloatingIcons() {
   // Y: down(-) / up(+)
   // Z: toward camera(-) / away from camera(+)
   
+  // Icons with white disc base
   const icons = [
-    // Top row (2 icons)
-    { position: [0.375, 0.55, 1] as [number, number, number], color: '#FFFFFF', iconType: 'person', label: 'About' }, // Left-top - Person icon
-    { position: [0.725, 0.55, 1] as [number, number, number], color: '#FFFFFF', iconType: 'folder', label: 'Experience' }, // Right-top - Folder icon
+    // Top row (3 icons)
+    { position: [0.2, 0.55, 1] as [number, number, number], color: '#FFFFFF', iconType: 'folder', label: 'Experience' }, // Top-left - Experience
+    { position: [0.55, 0.55, 1] as [number, number, number], color: '#FFFFFF', iconType: 'briefcase', label: 'Work' }, // Top-middle - Work
+    { position: [0.9, 0.55, 1] as [number, number, number], color: '#6D8196', iconType: 'paper', label: 'Resume' }, // Top-right - Resume
     
-    // Bottom row (3 icons)
-    { position: [0.2, 0.2, 1] as [number, number, number], color: '#FFFFFF', iconType: 'briefcase', label: 'Work' },    // Left-bottom - Briefcase icon
-    { position: [0.55, 0.2, 1] as [number, number, number], color: '#6D8196', iconType: 'paper', label: 'Resume' }, // Center-bottom - Paper icon
-    { position: [0.9, 0.2, 1] as [number, number, number], color: '#6D8196', iconType: 'envelope', label: 'Contact Me' },  // Right-bottom - Envelope icon
+    // Bottom row (1 icon with white disc)
+    { position: [0.2, 0.2, 1] as [number, number, number], color: '#6D8196', iconType: 'envelope', label: 'Contact Me' }, // Bottom-left - Contact Me
+  ]
+  
+  // Standalone GLB icons (no white disc)
+  const standaloneIcons = [
+    { position: [0.55, 0.2, 1] as [number, number, number], label: 'GitHub', type: 'github' }, // Bottom-middle - GitHub
+    { position: [0.9, 0.2, 1] as [number, number, number], label: 'LinkedIn', type: 'linkedin' }, // Bottom-right - LinkedIn
   ]
 
   const handleIconClick = (label: string) => {
+    // Handle external links for GitHub and LinkedIn
+    if (label === 'GitHub') {
+      window.open('https://github.com/legitHacker23', '_blank', 'noopener,noreferrer')
+      return
+    }
+    if (label === 'LinkedIn') {
+      window.open('https://www.linkedin.com/in/noahmndza', '_blank', 'noopener,noreferrer')
+      return
+    }
+    
+    // Handle regular panels
     setPanelState({ 
       isOpen: true, 
       label,
@@ -1262,6 +1452,7 @@ export function FloatingIcons() {
           scale={iconsSpring.scale}
           position={[0.2, 0.55, 0]}
         >
+          {/* Regular icons with white disc base */}
           {icons.map((icon, index) => (
             <FloatingIcon
               key={index}
@@ -1272,6 +1463,30 @@ export function FloatingIcons() {
               onClick={() => handleIconClick(icon.label)}
             />
           ))}
+          
+          {/* Standalone GLB icons (no white disc) */}
+          {standaloneIcons.map((icon, index) => {
+            if (icon.type === 'github') {
+              return (
+                <StandaloneGitHubIcon
+                  key={`standalone-${index}`}
+                  position={[icon.position[0] - 0.2, icon.position[1] - 0.55, icon.position[2]]}
+                  label={icon.label}
+                  onClick={() => handleIconClick(icon.label)}
+                />
+              )
+            } else if (icon.type === 'linkedin') {
+              return (
+                <StandaloneLinkedInIcon
+                  key={`standalone-${index}`}
+                  position={[icon.position[0] - 0.2, icon.position[1] - 0.55, icon.position[2]]}
+                  label={icon.label}
+                  onClick={() => handleIconClick(icon.label)}
+                />
+              )
+            }
+            return null
+          })}
         </animated.group>
       )}
       
@@ -1292,4 +1507,8 @@ export function FloatingIcons() {
       />    </group>
   )
 }
+
+// Preload GLB models for better performance
+useGLTF.preload('/assets/github.glb')
+useGLTF.preload('/assets/linkedin.glb')
 
