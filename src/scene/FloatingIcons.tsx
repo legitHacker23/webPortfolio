@@ -1473,6 +1473,17 @@ function ContactFormPanel({ onBack }: ContactFormPanelProps) {
         Contact Me
       </Text>
       
+      {/* Email Address - Right Side */}
+      <Text
+        position={[panelPosition[0] + 0.1, panelPosition[1] + 0.2, panelPosition[2] + 0.02]}
+        fontSize={0.025}
+        color="#FFFFFF"
+        anchorX="left"
+        anchorY="middle"
+      >
+        Email: nbmendoza1432@gmail.com
+      </Text>
+      
       {/* Input Fields */}
       <InputField
         label="Name"
@@ -1593,15 +1604,16 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
         <animated.meshPhysicalMaterial
           color="#F0F0F0"
           metalness={0}
-          roughness={0.5}
+          roughness={0}
           opacity={opacity.to(o => o * 0.5)}
           transparent={true}
-          transmission={0.5}
-          thickness={3.5}
+          transmission={1}
+          thickness={3.0}
           clearcoat={1}
           clearcoatRoughness={1}
-          ior={1}
+          ior={1.5}
           attenuationDistance={0.1}
+          anisotropy={1}
           attenuationColor="#FFFFFF"
         />
       </mesh>
