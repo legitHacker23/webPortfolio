@@ -1952,21 +1952,6 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
                   </group>
                 ))}
               </group>
-              
-              {/* Pagination Dots - rendered as 3D meshes */}
-              <group position={[0.5, 0.35, 0]}>
-                {PROJECT_PAGES.map((_, index) => (
-                  <mesh 
-                    key={index}
-                    position={[0, -index * 0.08, 0]}
-                  >
-                    <boxGeometry args={[0.006, 0.04, 0.001]} />
-                    <meshBasicMaterial 
-                      color={index === projectPage ? '#FFFFFF' : 'rgba(255,255,255,0.25)'} 
-                    />
-                  </mesh>
-                ))}
-              </group>
             </group>
           ) : (
             content.text && (
