@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useEffect, Suspense } from 'react'
+import React, { useState, useMemo, useEffect, Suspense, useRef } from 'react'
 import { useSpring, animated } from '@react-spring/three'
 import { RoundedBox, Text, MeshTransmissionMaterial, useTexture, useGLTF } from '@react-three/drei'
-import { useLoader } from '@react-three/fiber'
 import * as THREE from 'three'
 import emailjs from '@emailjs/browser'
 
@@ -12,6 +11,35 @@ interface IconProps {
   label?: string
   onClick?: () => void
 }
+
+const PROJECT_SECTIONS = [
+  {
+    title: 'Project 1: Posture Detection App',
+    description: 'A mobile application that uses computer vision to detect and correct posture in real-time. Achieved 98% accuracy using machine learning models.'
+  },
+  {
+    title: 'Project 2: AWS YouTube Trend Prediction',
+    description: 'A cloud-based platform that processes over 75,000 ingestion events to predict trending YouTube videos. Built with AWS services including Lambda, S3, and DynamoDB.'
+  },
+  {
+    title: 'Project 3: Data Analysis Dashboard',
+    description: 'An interactive dashboard for visualizing and analyzing large datasets. Features real-time updates and custom filtering capabilities.'
+  },
+  {
+    title: 'Project 4: Machine Learning Pipeline',
+    description: 'An end-to-end ML pipeline for training and deploying models. Includes data preprocessing, feature engineering, and model serving.'
+  },
+  {
+    title: 'Project 5: Web Application Framework',
+    description: 'A full-stack web application with modern UI/UX. Built with React, Node.js, and PostgreSQL.'
+  }
+]
+
+const PROJECT_PAGES = [
+  PROJECT_SECTIONS.slice(0, 2),
+  PROJECT_SECTIONS.slice(2, 4),
+  PROJECT_SECTIONS.slice(4)
+]
 
 
 // Rounded circular disc with beveled edges (VisionOS-style)
@@ -1625,6 +1653,9 @@ interface FloatingPanelProps {
 
 function FloatingPanel({ label, onBack, content, hideBackButton = false }: FloatingPanelProps) {
   const [backHovered, setBackHovered] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const [projectPage, setProjectPage] = useState(0)
+  const scrollLockRef = useRef(false)
   
   // Panel dimensions - covers the icon area
   const panelWidth = 1.2  // Width to cover all icons
@@ -1633,7 +1664,52 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
   
   // Panel position - center of icon area
   const panelPosition: [number, number, number] = [0.55, 0.375, 1]
+  const totalProjectPages = PROJECT_PAGES.length
   
+  const isProjectsPanel = label === 'Projects'
+  
+  const panelShape = useMemo(() => {
+    const radius = 0.08
+    const shape = new THREE.Shape()
+    shape.moveTo(-panelWidth / 2 + radius, -panelHeight / 2)
+    shape.lineTo(panelWidth / 2 - radius, -panelHeight / 2)
+    shape.quadraticCurveTo(panelWidth / 2, -panelHeight / 2, panelWidth / 2, -panelHeight / 2 + radius)
+    shape.lineTo(panelWidth / 2, panelHeight / 2 - radius)
+    shape.quadraticCurveTo(panelWidth / 2, panelHeight / 2, panelWidth / 2 - radius, panelHeight / 2)
+    shape.lineTo(-panelWidth / 2 + radius, panelHeight / 2)
+    shape.quadraticCurveTo(-panelWidth / 2, panelHeight / 2, -panelWidth / 2, panelHeight / 2 - radius)
+    shape.lineTo(-panelWidth / 2, -panelHeight / 2 + radius)
+    shape.quadraticCurveTo(-panelWidth / 2, -panelHeight / 2, -panelWidth / 2 + radius, -panelHeight / 2)
+    shape.closePath()
+    return shape
+  }, [panelWidth, panelHeight])
+
+  useEffect(() => {
+    setProjectPage(0)
+  }, [label])
+
+  useEffect(() => {
+    if (!isProjectsPanel) return
+
+    const handleWheel = (e: WheelEvent) => {
+      if (!isHovered || scrollLockRef.current) return
+      e.preventDefault()
+
+      scrollLockRef.current = true
+      setTimeout(() => {
+        scrollLockRef.current = false
+      }, 400)
+
+      setProjectPage(prev => {
+        const direction = e.deltaY > 0 ? 1 : -1
+        return Math.max(0, Math.min(totalProjectPages - 1, prev + direction))
+      })
+    }
+
+    window.addEventListener('wheel', handleWheel, { passive: false })
+    return () => window.removeEventListener('wheel', handleWheel)
+  }, [isProjectsPanel, isHovered, totalProjectPages])
+
   // Back button properties
   const backButtonRadius = 0.025
   const backButtonPosition: [number, number, number] = [
@@ -1667,26 +1743,7 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
         onClick={(e) => e.stopPropagation()}
       >
         <extrudeGeometry args={[
-          (() => {
-            const width = panelWidth
-            const height = panelHeight
-            const radius = 0.08  // Large rounded corners!
-            
-            // Create rounded rectangle shape
-            const shape = new THREE.Shape()
-            shape.moveTo(-width/2 + radius, -height/2)
-            shape.lineTo(width/2 - radius, -height/2)
-            shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
-            shape.lineTo(width/2, height/2 - radius)
-            shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
-            shape.lineTo(-width/2 + radius, height/2)
-            shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
-            shape.lineTo(-width/2, -height/2 + radius)
-            shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
-            shape.closePath()
-            
-            return shape
-          })(),
+          panelShape,
           {
             depth: 0.01,
             bevelEnabled: false,
@@ -1750,9 +1807,13 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
         </animated.group>
       )}
       
-      {/* Content Area */}
+      {/* Content Area - Scrollable for Projects Panel */}
       {content && (
-        <group onClick={(e) => e.stopPropagation()}>
+        <group 
+          onClick={(e) => e.stopPropagation()}
+          position={[0, 0, 0]}
+        >
+          
           {/* Greeting Section - "Hi I'm" */}
           {content.name && (
             <group>
@@ -1853,20 +1914,75 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
             </group>
           )}
           
-          {/* Content Text */}
-          {content.text && (
-            <Text
-              position={[panelPosition[0] - 0.2925, panelPosition[1] - 0.075, panelPosition[2] + 0.02]}
-              fontSize={0.027}
-              color="#FFFFFF"
-              anchorX="center"
-              anchorY="middle"
-              maxWidth={panelWidth - 0.75}
-              lineHeight={1.3}
-              textAlign="left"
+          {isProjectsPanel ? (
+            <group 
+              position={[panelPosition[0], panelPosition[1], panelPosition[2] + 0.02]}
+              onPointerEnter={() => setIsHovered(true)}
+              onPointerLeave={() => setIsHovered(false)}
             >
-              {content.text}
-            </Text>
+              {/* Project Sections - rendered as 3D Text */}
+              <group position={[-0.45, 0.3, 0]}>
+                {PROJECT_PAGES[projectPage].map((section, sectionIndex) => (
+                  <group key={section.title} position={[0, -sectionIndex * 0.25, 0]}>
+                    {/* Title */}
+                    <Text
+                      position={[0, 0, 0]}
+                      fontSize={0.04}
+                      color="#FFFFFF"
+                      anchorX="left"
+                      anchorY="top"
+                      fontWeight="bold"
+                      maxWidth={0.8}
+                    >
+                      {section.title}
+                    </Text>
+                    {/* Description */}
+                    <Text
+                      position={[0, -0.08, 0]}
+                      fontSize={0.027}
+                      color="#FFFFFF"
+                      anchorX="left"
+                      anchorY="top"
+                      maxWidth={0.8}
+                      lineHeight={1.3}
+                      textAlign="left"
+                    >
+                      {section.description}
+                    </Text>
+                  </group>
+                ))}
+              </group>
+              
+              {/* Pagination Dots - rendered as 3D meshes */}
+              <group position={[0.5, 0.35, 0]}>
+                {PROJECT_PAGES.map((_, index) => (
+                  <mesh 
+                    key={index}
+                    position={[0, -index * 0.08, 0]}
+                  >
+                    <boxGeometry args={[0.006, 0.04, 0.001]} />
+                    <meshBasicMaterial 
+                      color={index === projectPage ? '#FFFFFF' : 'rgba(255,255,255,0.25)'} 
+                    />
+                  </mesh>
+                ))}
+              </group>
+            </group>
+          ) : (
+            content.text && (
+              <Text
+                position={[panelPosition[0] - 0.2925, panelPosition[1] - 0.075, panelPosition[2] + 0.02]}
+                fontSize={0.027}
+                color="#FFFFFF"
+                anchorX="center"
+                anchorY="middle"
+                maxWidth={panelWidth - 0.75}
+                lineHeight={1.3}
+                textAlign="left"
+              >
+                {content.text}
+              </Text>
+            )
           )}
         </group>
       )}
@@ -1902,7 +2018,7 @@ export function FloatingIcons() {
       text: 'Experience content coming soon...'
     },
     'Projects': {
-      text: 'Work portfolio coming soon...'
+      text: 'Projects content rendered via sections.'
     },
     'Resume': {
       text: 'Resume content coming soon...'
@@ -1911,6 +2027,7 @@ export function FloatingIcons() {
       text: 'Contact information coming soon...'
     }
   }
+
 
   // Icon positions arranged in a grid pattern, centered in view
   // Position format: [X, Y, Z]
