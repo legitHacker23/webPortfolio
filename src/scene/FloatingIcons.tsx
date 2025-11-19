@@ -1409,19 +1409,21 @@ function ContactFormPanel({ onBack }: ContactFormPanelProps) {
             curveSegments: 32
           }
         ]} />
-        <animated.meshPhysicalMaterial
-          color="#F0F0F0"
+        <MeshTransmissionMaterial
+          color="white"
           metalness={0}
-          roughness={0.5}
-          opacity={opacity.to(o => o * 0.5)}
-          transparent={true}
-          transmission={0.5}
-          thickness={3.5}
-          clearcoat={1}
-          clearcoatRoughness={1}
-          ior={1}
-          attenuationDistance={0.1}
-          attenuationColor="#FFFFFF"
+          roughness={0.01}
+          ior={1.8}
+          thickness={0}
+          reflectivity={1}
+          chromaticAberration={0.1}
+          clearcoat={0.4}
+          resolution={1024}
+          clearcoatRoughness={0.05}
+          iridescence={0.9}
+          iridescenceIOR={0.1}
+          iridescenceThicknessRange={[0, 140]}
+          samples={4}
         />
       </mesh>
       
@@ -1519,6 +1521,96 @@ function ContactFormPanel({ onBack }: ContactFormPanelProps) {
   )
 }
 
+// Small Menu Panel - appears when Projects panel is open
+function SmallMenuPanel() {
+  // Small panel dimensions
+  const panelWidth = 0.15
+  const panelHeight = 0.05
+  const panelPosition: [number, number, number] = [0.4, 0.15, 1.02] // Positioned to the right of main panel
+  
+  // Animate panel appearance
+  const { scale, opacity } = useSpring({
+    from: { scale: 0.8, opacity: 0 },
+    to: { scale: 1, opacity: 1 },
+    config: { tension: 280, friction: 26 }
+  })
+  
+  return (
+    <animated.group scale={scale} rotation={[0, 0, Math.PI / 2]}>      {/* Small Menu Panel */}
+      <mesh 
+        position={panelPosition}
+        castShadow
+        receiveShadow
+        onClick={(e) => e.stopPropagation()}
+      >
+        <extrudeGeometry args={[
+          (() => {
+            const width = panelWidth
+            const height = panelHeight
+            const radius = 0.03  // Rounded corners
+            
+            const shape = new THREE.Shape()
+            shape.moveTo(-width/2 + radius, -height/2)
+            shape.lineTo(width/2 - radius, -height/2)
+            shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
+            shape.lineTo(width/2, height/2 - radius)
+            shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
+            shape.lineTo(-width/2 + radius, height/2)
+            shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
+            shape.lineTo(-width/2, -height/2 + radius)
+            shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
+            shape.closePath()
+            
+            return shape
+          })(),
+          {
+            depth: 0.01,
+            bevelEnabled: false,
+            curveSegments: 32
+          }
+        ]} />
+        <MeshTransmissionMaterial
+          color="white"
+          metalness={0}
+          roughness={0.01}
+          ior={1.8}
+          thickness={0}
+          reflectivity={1}
+          chromaticAberration={0.1}
+          clearcoat={0.4}
+          resolution={1024}
+          clearcoatRoughness={0.05}
+          iridescence={0.9}
+          iridescenceIOR={0.1}
+          iridescenceThicknessRange={[0, 140]}
+          samples={4}
+        />
+      </mesh>
+      
+      {/* Three Dots */}
+      <group position={[panelPosition[0], panelPosition[1], panelPosition[2] + 0.015]}>
+        {/* Dot 3 */}
+        <mesh position={[-0.05, 0, 0]}>
+          <circleGeometry args={[0.01, 32]} />
+          <meshBasicMaterial color="#FFFFFF" />
+        </mesh>
+        
+        {/* Dot 2 */}
+        <mesh position={[0, 0, 0]}>
+          <circleGeometry args={[0.01, 32]} />
+          <meshBasicMaterial color="#FFFFFF" />
+        </mesh>
+        
+        {/* Dot 1 */}
+        <mesh position={[0.05, 0, 0]}>
+          <circleGeometry args={[0.01, 32]} />
+          <meshBasicMaterial color="#FFFFFF" />
+        </mesh>
+      </group>
+    </animated.group>
+  )
+}
+
 // 3D Floating Rectangle Panel
 interface FloatingPanelProps {
   label: string
@@ -1601,20 +1693,21 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
             curveSegments: 32
           }
         ]} />
-        <animated.meshPhysicalMaterial
-          color="#F0F0F0"
+        <MeshTransmissionMaterial
+          color="white"
           metalness={0}
-          roughness={0}
-          opacity={opacity.to(o => o * 0.5)}
-          transparent={true}
-          transmission={1}
-          thickness={3.0}
-          clearcoat={1}
-          clearcoatRoughness={1}
-          ior={1.5}
-          attenuationDistance={0.1}
-          anisotropy={1}
-          attenuationColor="#FFFFFF"
+          roughness={0.01}
+          ior={1.8}
+          thickness={0}
+          reflectivity={1}
+          chromaticAberration={0.1}
+          clearcoat={0.4}
+          resolution={1024}
+          clearcoatRoughness={0.05}
+          iridescence={0.9}
+          iridescenceIOR={0.1}
+          iridescenceThicknessRange={[0, 140]}
+          samples={4}
         />
       </mesh>
       
@@ -1808,7 +1901,7 @@ export function FloatingIcons() {
     'Experience': {
       text: 'Experience content coming soon...'
     },
-    'Work': {
+    'Projects': {
       text: 'Work portfolio coming soon...'
     },
     'Resume': {
@@ -1829,7 +1922,7 @@ export function FloatingIcons() {
   const icons = [
     // Top row (3 icons)
     { position: [0.2, 0.55, 1] as [number, number, number], color: '#FFFFFF', iconType: 'folder', label: 'Experience' }, // Top-left - Experience
-    { position: [0.55, 0.55, 1] as [number, number, number], color: '#FFFFFF', iconType: 'briefcase', label: 'Work' }, // Top-middle - Work
+    { position: [0.55, 0.55, 1] as [number, number, number], color: '#FFFFFF', iconType: 'briefcase', label: 'Projects' }, // Top-middle - Work
     { position: [0.9, 0.55, 1] as [number, number, number], color: '#6D8196', iconType: 'paper', label: 'Resume' }, // Top-right - Resume
     
     // Bottom row (1 icon with white disc)
@@ -1948,11 +2041,15 @@ export function FloatingIcons() {
             onBack={handleBack}
           />
         ) : (
-          <FloatingPanel
-            label={panelState.label}
-            onBack={handleBack}
-            content={panelState.content}
-          />
+          <>
+            <FloatingPanel
+              label={panelState.label}
+              onBack={handleBack}
+              content={panelState.content}
+            />
+            {/* Small Menu Panel - only show when Projects panel is open */}
+            {panelState.label === 'Projects' && <SmallMenuPanel />}
+          </>
         )
       )}
       
