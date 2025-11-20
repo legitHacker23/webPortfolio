@@ -3,6 +3,7 @@ import { useSpring, animated } from '@react-spring/three'
 import { RoundedBox, Text, MeshTransmissionMaterial, useTexture, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import emailjs from '@emailjs/browser'
+import { PROJECT_SECTIONS, PROJECT_SECTIONS_ARRAY } from './ProjectContent'
 
 interface IconProps {
   position: [number, number, number]
@@ -12,34 +13,7 @@ interface IconProps {
   onClick?: () => void
 }
 
-const PROJECT_SECTIONS = [
-  {
-    title: 'Project 1: Posture Detection App',
-    description: 'A mobile application that uses computer vision to detect and correct posture in real-time. Achieved 98% accuracy using machine learning models.'
-  },
-  {
-    title: 'Project 2: AWS YouTube Trend Prediction',
-    description: 'A cloud-based platform that processes over 75,000 ingestion events to predict trending YouTube videos. Built with AWS services including Lambda, S3, and DynamoDB.'
-  },
-  {
-    title: 'Project 3: Data Analysis Dashboard',
-    description: 'An interactive dashboard for visualizing and analyzing large datasets. Features real-time updates and custom filtering capabilities.'
-  },
-  {
-    title: 'Project 4: Machine Learning Pipeline',
-    description: 'An end-to-end ML pipeline for training and deploying models. Includes data preprocessing, feature engineering, and model serving.'
-  },
-  {
-    title: 'Project 5: Web Application Framework',
-    description: 'A full-stack web application with modern UI/UX. Built with React, Node.js, and PostgreSQL.'
-  }
-]
-
-const PROJECT_PAGES = [
-  PROJECT_SECTIONS.slice(0, 2),
-  PROJECT_SECTIONS.slice(2, 4),
-  PROJECT_SECTIONS.slice(4)
-]
+// Project data and panels moved to ProjectContent.tsx
 
 
 // Rounded circular disc with beveled edges (VisionOS-style)
@@ -1639,6 +1613,72 @@ function SmallMenuPanel() {
   )
 }
 
+// Clipping Wrapper Component - applies clipping planes to all children
+function ClippingWrapper({ 
+  children, 
+  clippingPlanes 
+}: { 
+  children: React.ReactNode
+  clippingPlanes: THREE.Plane[]
+}) {
+  const groupRef = useRef<THREE.Group>(null)
+  
+  useEffect(() => {
+    if (!groupRef.current) return
+    
+    const applyClipping = () => {
+      if (!groupRef.current) return
+      
+      // Update world matrix to transform planes correctly
+      groupRef.current.updateMatrixWorld(true)
+      const worldMatrix = groupRef.current.matrixWorld
+      
+      // Transform clipping planes from local space to world space
+      const worldPlanes = clippingPlanes.map(plane => {
+        const worldPlane = plane.clone()
+        // Transform plane normal and point to world space
+        const normal = plane.normal.clone().transformDirection(worldMatrix)
+        const point = new THREE.Vector3()
+        plane.coplanarPoint(point)
+        point.applyMatrix4(worldMatrix)
+        normal.normalize()
+        worldPlane.setFromNormalAndCoplanarPoint(normal, point)
+        return worldPlane
+      })
+      
+      // Traverse all children and apply clipping planes to materials
+      groupRef.current?.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          const material = child.material as THREE.Material
+          if (Array.isArray(material)) {
+            material.forEach(mat => {
+              if (mat instanceof THREE.Material) {
+                mat.clippingPlanes = worldPlanes
+                mat.clipShadows = true
+                mat.needsUpdate = true
+              }
+            })
+          } else if (material instanceof THREE.Material) {
+            material.clippingPlanes = worldPlanes
+            material.clipShadows = true
+            material.needsUpdate = true
+          }
+        }
+      })
+    }
+    
+    // Apply clipping immediately
+    applyClipping()
+    
+    // Also apply on next frame to catch dynamically added content
+    const timeoutId = setTimeout(applyClipping, 0)
+    
+    return () => clearTimeout(timeoutId)
+  }, [clippingPlanes, children])
+  
+  return <group ref={groupRef}>{children}</group>
+}
+
 // 3D Floating Rectangle Panel
 interface FloatingPanelProps {
   label: string
@@ -1654,8 +1694,10 @@ interface FloatingPanelProps {
 function FloatingPanel({ label, onBack, content, hideBackButton = false }: FloatingPanelProps) {
   const [backHovered, setBackHovered] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
-  const [projectPage, setProjectPage] = useState(0)
-  const scrollLockRef = useRef(false)
+  const [scrollOffset, setScrollOffset] = useState(0) // Continuous scroll offset in 3D units
+  const [targetScrollOffset, setTargetScrollOffset] = useState(0) // Target offset for smooth momentum scrolling
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const momentumRef = useRef<number>(0) // Momentum for smooth scrolling
   
   // Panel dimensions - covers the icon area
   const panelWidth = 1.2  // Width to cover all icons
@@ -1664,9 +1706,23 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
   
   // Panel position - center of icon area
   const panelPosition: [number, number, number] = [0.55, 0.375, 1]
-  const totalProjectPages = PROJECT_PAGES.length
+  const totalProjectSections = PROJECT_SECTIONS_ARRAY.length
   
   const isProjectsPanel = label === 'Projects'
+  
+  // Scroll settings for continuous scrolling
+  const scrollSensitivity = 0.002 // How much 3D units per pixel of scroll (increased for better responsiveness)
+  const sectionHeight = 1.2 // Height of each big section in 3D units (larger since sections contain multiple projects)
+  const maxScrollOffset = (totalProjectSections - 1) * sectionHeight // Maximum scroll offset
+  
+  // Spring animation for smooth scrolling - Framer Motion-like config
+  const { scrollY } = useSpring({
+    scrollY: targetScrollOffset, // Positive scroll moves content up (sections below come into view)
+    config: { 
+      tension: 280,  // Lower tension for smoother, less aggressive animation (Framer Motion-like)
+      friction: 30   // Balanced friction for natural deceleration
+    }
+  })
   
   const panelShape = useMemo(() => {
     const radius = 0.08
@@ -1684,31 +1740,109 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
     return shape
   }, [panelWidth, panelHeight])
 
+  // Clipping planes to constrain content within panel bounds
+  // Planes are defined relative to the group's local coordinate system (group origin at 0,0,0)
+  // In Three.js, clipping planes clip everything where normal · point + constant > 0
+  // So we want planes that clip outside the panel, meaning normals point outward
+  const clippingPlanes = useMemo(() => {
+    const halfWidth = panelWidth / 2
+    const halfHeight = panelHeight / 2
+    
+    // Define planes that clip content OUTSIDE the panel
+    // Each plane's normal points outward, and constant is set so the plane is at the boundary
+    return [
+      new THREE.Plane(new THREE.Vector3(0, -1, 0), halfHeight),   // Top: clips where y > halfHeight (normal points down)
+      new THREE.Plane(new THREE.Vector3(0, 1, 0), halfHeight),    // Bottom: clips where y < -halfHeight (normal points up)
+      new THREE.Plane(new THREE.Vector3(-1, 0, 0), halfWidth),     // Right: clips where x > halfWidth (normal points left)
+      new THREE.Plane(new THREE.Vector3(1, 0, 0), halfWidth),     // Left: clips where x < -halfWidth (normal points right)
+    ]
+  }, [panelWidth, panelHeight])
+
   useEffect(() => {
-    setProjectPage(0)
+    setScrollOffset(0)
+    setTargetScrollOffset(0)
+    momentumRef.current = 0
   }, [label])
+
+  // Momentum scrolling animation loop - runs continuously when panel is open
+  useEffect(() => {
+    if (!isProjectsPanel) return
+
+    let animationFrameId: number
+    const friction = 0.92 // Momentum decay factor (Framer Motion-like)
+    const minVelocity = 0.001 // Minimum velocity to continue animation
+
+    const animate = () => {
+      if (Math.abs(momentumRef.current) > minVelocity) {
+        // Apply momentum
+        setTargetScrollOffset(prev => {
+          const newOffset = prev + momentumRef.current
+          const clamped = Math.max(0, Math.min(maxScrollOffset, newOffset))
+          
+          // If we hit a boundary, stop momentum
+          if (clamped !== newOffset) {
+            momentumRef.current = 0
+            return clamped
+          }
+          
+          return newOffset
+        })
+        
+        // Decay momentum
+        momentumRef.current *= friction
+        
+        animationFrameId = requestAnimationFrame(animate)
+      }
+    }
+
+    // Start animation loop
+    animationFrameId = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
+    }
+  }, [isProjectsPanel, maxScrollOffset])
 
   useEffect(() => {
     if (!isProjectsPanel) return
 
     const handleWheel = (e: WheelEvent) => {
-      if (!isHovered || scrollLockRef.current) return
+      // Always handle scroll when projects panel is open
       e.preventDefault()
-
-      scrollLockRef.current = true
-      setTimeout(() => {
-        scrollLockRef.current = false
-      }, 400)
-
-      setProjectPage(prev => {
-        const direction = e.deltaY > 0 ? 1 : -1
-        return Math.max(0, Math.min(totalProjectPages - 1, prev + direction))
+      e.stopPropagation()
+      
+      const scrollDelta = e.deltaY * scrollSensitivity
+      
+      // Add to momentum for smooth scrolling
+      momentumRef.current += scrollDelta * 0.5
+      
+      // Clamp momentum to prevent excessive scrolling
+      momentumRef.current = Math.max(-0.1, Math.min(0.1, momentumRef.current))
+      
+      // Update target scroll offset immediately for responsive feel
+      setTargetScrollOffset(prev => {
+        const newOffset = prev + scrollDelta
+        return Math.max(0, Math.min(maxScrollOffset, newOffset))
       })
+      
+      // Update actual scroll offset for immediate feedback
+      setScrollOffset(prev => {
+        const newOffset = prev + scrollDelta
+        return Math.max(0, Math.min(maxScrollOffset, newOffset))
+      })
+      
     }
 
     window.addEventListener('wheel', handleWheel, { passive: false })
-    return () => window.removeEventListener('wheel', handleWheel)
-  }, [isProjectsPanel, isHovered, totalProjectPages])
+    return () => {
+      window.removeEventListener('wheel', handleWheel)
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [isProjectsPanel, scrollSensitivity, maxScrollOffset])
 
   // Back button properties
   const backButtonRadius = 0.025
@@ -1917,41 +2051,31 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
           {isProjectsPanel ? (
             <group 
               position={[panelPosition[0], panelPosition[1], panelPosition[2] + 0.02]}
-              onPointerEnter={() => setIsHovered(true)}
-              onPointerLeave={() => setIsHovered(false)}
             >
-              {/* Project Sections - rendered as 3D Text */}
-              <group position={[-0.45, 0.3, 0]}>
-                {PROJECT_PAGES[projectPage].map((section, sectionIndex) => (
-                  <group key={section.title} position={[0, -sectionIndex * 0.25, 0]}>
-                    {/* Title */}
-                    <Text
-                      position={[0, 0, 0]}
-                      fontSize={0.04}
-                      color="#FFFFFF"
-                      anchorX="left"
-                      anchorY="top"
-                      fontWeight="bold"
-                      maxWidth={0.8}
-                    >
-                      {section.title}
-                    </Text>
-                    {/* Description */}
-                    <Text
-                      position={[0, -0.08, 0]}
-                      fontSize={0.027}
-                      color="#FFFFFF"
-                      anchorX="left"
-                      anchorY="top"
-                      maxWidth={0.8}
-                      lineHeight={1.3}
-                      textAlign="left"
-                    >
-                      {section.description}
-                    </Text>
-                  </group>
-                ))}
-              </group>
+              {/* Invisible plane to catch hover events for scrolling */}
+              <mesh
+                position={[0, 0, 0]}
+                onPointerEnter={() => setIsHovered(true)}
+                onPointerLeave={() => setIsHovered(false)}
+              >
+                <planeGeometry args={[panelWidth, panelHeight]} />
+                <meshBasicMaterial visible={false} />
+              </mesh>
+              
+              {/* Continuous scrolling project panels with clipping */}
+              <ClippingWrapper clippingPlanes={clippingPlanes}>
+                <animated.group
+                  position-y={scrollY}
+                >
+                  {/* Render all project sections stacked vertically */}
+                  {/* First section at y=0 (visible), subsequent sections below at negative Y */}
+                  {PROJECT_SECTIONS_ARRAY.map((SectionComponent, index) => (
+                    <group key={index} position={[0, -index * sectionHeight, 0]}>
+                      <SectionComponent position={[0, 0, 0]} />
+                    </group>
+                  ))}
+                </animated.group>
+              </ClippingWrapper>
             </group>
           ) : (
             content.text && (
@@ -2167,4 +2291,3 @@ export function FloatingIcons() {
 // Preload GLB models for better performance
 useGLTF.preload('/assets/github.glb')
 useGLTF.preload('/assets/linkedin.glb')
-

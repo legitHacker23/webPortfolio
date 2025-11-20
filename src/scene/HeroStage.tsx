@@ -304,7 +304,8 @@ export function HeroStage() {
         powerPreference: 'high-performance',
         outputColorSpace: THREE.SRGBColorSpace,
         toneMapping: THREE.NoToneMapping,
-        toneMappingExposure: 2.0
+        toneMappingExposure: 2.0,
+        localClippingEnabled: true  // Enable clipping planes
       }}
       frameloop="always"
       style={{ position: 'absolute', inset: 0, zIndex: 0, background: '#ffffff' }}
