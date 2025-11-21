@@ -7,7 +7,7 @@ import * as THREE from 'three'
 export const PROJECT_SECTIONS = [
   {
     title: 'Rice University AI Course Catalog',
-    description: 'Built an intelligent course-search platform using FAISS vector retrieval and OpenAI, enabling students to ask complex academic questions and receive real-time, context-aware results. Implemented a WebSocket architecture for instant AI responses and created a full RAG pipeline for indexing thousands of course descriptions. Tech stack: Python, FAISS, OpenAI, React, WebSockets.',
+    // description: 'Built an intelligent course-search platform using FAISS vector retrieval and OpenAI, enabling students to ask complex academic questions and receive real-time, context-aware results. Implemented a WebSocket architecture for instant AI responses and created a full RAG pipeline for indexing thousands of course descriptions. Tech stack: Python, FAISS, OpenAI, React, WebSockets.',
     image: '/assets/rice.png'
   },
   {
@@ -21,7 +21,7 @@ export const PROJECT_SECTIONS = [
 ]
 
 // Project Screenshot Component
-function ProjectScreenshotInternal({ imagePath, position, width = 0.4, height = 0.3 }: { 
+function ProjectScreenshotInternal({ imagePath, position, width = 1, height = 1 }: { 
   imagePath: string
   position: [number, number, number]
   width?: number
@@ -29,57 +29,70 @@ function ProjectScreenshotInternal({ imagePath, position, width = 0.4, height = 
 }) {
   const texture = useTexture(imagePath)
   
-  // Create rounded rectangle shape
-  const roundedShape = React.useMemo(() => {
-    const radius = 0.03 // Corner radius - adjust this to change roundness
-    const shape = new THREE.Shape()
-    
-    // Start from bottom-left, going clockwise
-    shape.moveTo(-width / 2 + radius, -height / 2)
-    shape.lineTo(width / 2 - radius, -height / 2)
-    shape.quadraticCurveTo(width / 2, -height / 2, width / 2, -height / 2 + radius)
-    shape.lineTo(width / 2, height / 2 - radius)
-    shape.quadraticCurveTo(width / 2, height / 2, width / 2 - radius, height / 2)
-    shape.lineTo(-width / 2 + radius, height / 2)
-    shape.quadraticCurveTo(-width / 2, height / 2, -width / 2, height / 2 - radius)
-    shape.lineTo(-width / 2, -height / 2 + radius)
-    shape.quadraticCurveTo(-width / 2, -height / 2, -width / 2 + radius, -height / 2)
-    shape.closePath()
-    
-    return shape
-  }, [width, height])
-    
-  // Improve texture quality settings
+  // Reset texture to fill the panel (no aspect ratio preservation)
   React.useEffect(() => {
     if (texture) {
-      // Enable anisotropic filtering for better quality at angles
-      texture.anisotropy = 16 // Maximum quality (default is 1)
-      
-      // Use better filtering for sharper images
-      texture.minFilter = THREE.LinearMipmapLinearFilter // Smooth scaling down
-      texture.magFilter = THREE.LinearFilter // Sharp when zoomed in
-      
-      // Ensure mipmaps are generated
-      texture.generateMipmaps = true
-      
-      // Set encoding for proper color rendering
-      texture.colorSpace = THREE.SRGBColorSpace
+      texture.repeat.set(1, 1)
+      texture.offset.set(0, 0)
+      texture.needsUpdate = true
     }
   }, [texture])
   
+  // Shader material with image and bottom fade gradient
+  const material = React.useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uTexture: { value: texture },
+        uFadeStart: { value: 0.85 }, // Start fade at 30% from bottom
+        uFadeEnd: { value: 0.0 }    // Full black at bottom
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D uTexture;
+        uniform float uFadeStart;
+        uniform float uFadeEnd;
+        varying vec2 vUv;
+        
+        void main() {
+          vec4 texColor = texture2D(uTexture, vUv);
+          
+          // Calculate fade based on vertical position (vUv.y: 0 = bottom, 1 = top)
+          float fadeFactor = smoothstep(uFadeEnd, uFadeStart, vUv.y);
+          
+          // Apply black fade at bottom
+          vec3 finalColor = mix(vec3(0.0, 0.0, 0.0), texColor.rgb, fadeFactor);
+          
+          gl_FragColor = vec4(finalColor, texColor.a);
+        }
+      `
+    })
+  }, [texture])
+  
+  // Update texture uniform when it loads
+  React.useEffect(() => {
+    if (material && texture) {
+      material.uniforms.uTexture.value = texture
+    }
+  }, [material, texture])
+  
   return (
-    <mesh position={position} castShadow receiveShadow>
-      <shapeGeometry args={[roundedShape]} />
-      <meshStandardMaterial 
-        map={texture}
-        metalness={0.0}
-        roughness={1.0}
-      />
+    <mesh
+      position={position}
+      castShadow
+    >
+      <planeGeometry args={[width, height]} />
+      <primitive object={material} />
     </mesh>
   )
 }
 
-function ProjectScreenshot({ imagePath, position, width = 0.7, height = 0.3 }: { 
+function ProjectScreenshot({ imagePath, position, width = 1, height = 0.3 }: { 
   imagePath: string
   position: [number, number, number]
   width?: number
@@ -107,17 +120,17 @@ export function ProjectPanel1({ position }: ProjectPanel1Props) {
   
   return (
     <group position={position}>
-      {/* Image on the right */}
+      {/* Image on the right - behind text */}
       <ProjectScreenshot
         imagePath={section.image!}
-        position={[0.6, -0.15, 0.0125]}
-        width={0.4}
-        height={0.44}
+        position={[0, 0, 0]}
+        width={1.2}
+        height={0.9}
       />
       
-      {/* Title on the left */}
+      {/* Title on the left - in front of image */}
       <Text
-        position={[-0.15, 0.1, 0]}
+        position={[-0.5, -0.15, 0.02]}
         fontSize={0.035}
         color="#FFFFFF"
         anchorX="left"
@@ -128,9 +141,9 @@ export function ProjectPanel1({ position }: ProjectPanel1Props) {
         {section.title}
       </Text>
       
-      {/* Description on the left, below title */}
+      {/* Description on the left, below title - in front of image */}
       <Text
-        position={[-0.15, -0.05, 0]}
+        position={[-0.5, 0.225, 0.02]}
         fontSize={0.024}
         color="#FFFFFF"
         anchorX="left"
