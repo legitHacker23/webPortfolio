@@ -7,16 +7,21 @@ import * as THREE from 'three'
 export const PROJECT_SECTIONS = [
   {
     title: 'Rice University AI Course Catalog',
-    // description: 'Built an intelligent course-search platform using FAISS vector retrieval and OpenAI, enabling students to ask complex academic questions and receive real-time, context-aware results. Implemented a WebSocket architecture for instant AI responses and created a full RAG pipeline for indexing thousands of course descriptions. Tech stack: Python, FAISS, OpenAI, React, WebSockets.',
+    description: 'Built an AI course search platform by web scraping 1,000+ Rice university courses and implementing a FAISS vector retrieval with an OpenAI and Websocket RAG pipeline to answer real time academic questions for 1000+ incoming Rice students.',
     image: '/assets/rice.png'
   },
   {
     title: 'Project 2: AWS YouTube Trend Prediction',
-    description: 'A cloud-based platform that processes over 75,000 ingestion events to predict trending YouTube videos. Built with AWS services including Lambda, S3, and DynamoDB.'
+    description: 'A cloud-based platform that processes over 75,000 ingestion zevents to predict trending YouTube videos. Built with AWS services including Lambda, S3, and DynamoDB.',
+    image: '/assets/postureproject.png'
   },
   {
     title: 'Project 3: Data Analysis Dashboard',
     description: 'An interactive dashboard for visualizing and analyzing large datasets. Features real-time updates and custom filtering capabilities.'
+  },
+  {
+    title: 'Magic Mirror',
+    description: 'Built a fully functional AI assistant that uses voice transcription and gemini to answer real time question regarding weather and personal schedules.'
   }
 ]
 
@@ -60,6 +65,22 @@ function ProjectScreenshotInternal({ imagePath, position, width = 1, height = 1 
         varying vec2 vUv;
         
         void main() {
+          // Simple rounded corners - proper rounded rectangle distance
+          float radius = 0.06;
+          
+          // Convert UV to center-origin (ranges from -0.5 to 0.5)
+          vec2 p = vUv - 0.5;
+          vec2 halfSize = vec2(0.5, 0.5) - radius;
+          
+          // Calculate distance to rounded rectangle
+          vec2 d = abs(p) - halfSize;
+          float dist = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - radius;
+          
+          // Discard pixels outside rounded rectangle
+          if (dist > 0.0) {
+            discard;
+          }
+          
           vec4 texColor = texture2D(uTexture, vUv);
           
           // Calculate fade based on vertical position (vUv.y: 0 = bottom, 1 = top)
@@ -123,7 +144,7 @@ export function ProjectPanel1({ position }: ProjectPanel1Props) {
       {/* Image on the right - behind text */}
       <ProjectScreenshot
         imagePath={section.image!}
-        position={[0, 0, 0]}
+        position={[0, 0, -0.01]}
         width={1.2}
         height={0.9}
       />
@@ -143,12 +164,12 @@ export function ProjectPanel1({ position }: ProjectPanel1Props) {
       
       {/* Description on the left, below title - in front of image */}
       <Text
-        position={[-0.5, 0.225, 0.02]}
+        position={[-0.5, -0.25, 0.02]}
         fontSize={0.024}
         color="#FFFFFF"
         anchorX="left"
         anchorY="top"
-        maxWidth={0.35}
+        maxWidth={0.8}
         lineHeight={1.3}
         textAlign="left"
       >
@@ -168,27 +189,35 @@ export function ProjectPanel2({ position }: ProjectPanel2Props) {
   
   return (
     <group position={position}>
-      {/* Title */}
+      {/* Image on the right - behind text */}
+      <ProjectScreenshot
+        imagePath={section.image!}
+        position={[0, 0, -0.01]}
+        width={1.2}
+        height={0.9}
+      />
+      
+      {/* Title on the left - in front of image */}
       <Text
-        position={[0, 0, 0]}
-        fontSize={0.04}
+        position={[-0.5, -0.15, 0.02]}
+        fontSize={0.035}
         color="#FFFFFF"
         anchorX="left"
         anchorY="top"
         fontWeight="bold"
-        maxWidth={0.75}
+        maxWidth={0.35}
       >
         {section.title}
       </Text>
       
-      {/* Description */}
+      {/* Description on the left, below title - in front of image */}
       <Text
-        position={[0, -0.12, 0]}
-        fontSize={0.027}
+        position={[-0.5, -0.25, 0.02]}
+        fontSize={0.024}
         color="#FFFFFF"
         anchorX="left"
         anchorY="top"
-        maxWidth={0.75}
+        maxWidth={0.8}
         lineHeight={1.3}
         textAlign="left"
       >

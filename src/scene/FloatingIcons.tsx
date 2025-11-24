@@ -2251,9 +2251,7 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
                     )}
                     
                     {/* Project content inside panel */}
-                    <ClippingWrapper clippingPlanes={clippingPlanes}>
-                      <ProjectComponent position={[0, 0, 0.025]} />
-                    </ClippingWrapper>
+                    <ProjectComponent position={[0, 0, 0.025]} />
                   </animated.group>
                 )
               })}
