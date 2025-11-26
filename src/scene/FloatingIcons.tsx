@@ -5,6 +5,10 @@ import * as THREE from 'three'
 import emailjs from '@emailjs/browser'
 import { PROJECT_SECTIONS, PROJECT_SECTIONS_ARRAY, ProjectPanel1, ProjectPanel2, ProjectPanel3 } from './ProjectContent'
 
+// Base Z position for all UI elements - adjust to move everything forward/back
+// Lower values = closer to camera, Higher values = further from camera
+const BASE_Z_POSITION = 1.5
+
 interface IconProps {
   position: [number, number, number]
   color: string
@@ -1090,7 +1094,7 @@ function ContactFormPanel({ onBack }: ContactFormPanelProps) {
   // Panel dimensions - same as FloatingPanel
   const panelWidth = 1.2
   const panelHeight = 0.9
-  const panelPosition: [number, number, number] = [0.55, 0.375, 1]
+  const panelPosition: [number, number, number] = [0.55, 0.375, BASE_Z_POSITION]
   
   // Back button properties
   const backButtonRadius = 0.025
@@ -1528,7 +1532,7 @@ function SmallMenuPanel() {
   // Small panel dimensions
   const panelWidth = 0.15
   const panelHeight = 0.05
-  const panelPosition: [number, number, number] = [0.4, 0.15, 1.02] // Positioned to the right of main panel
+  const panelPosition: [number, number, number] = [0.4, 0.15, BASE_Z_POSITION + 0.02] // Positioned to the right of main panel
   
   // Animate panel appearance
   const { scale, opacity } = useSpring({
@@ -1705,7 +1709,7 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
   const panelDepth = 0.02 // Same thickness as icon discs
   
   // Panel position - center of icon area
-  const panelPosition: [number, number, number] = [0.55, 0.375, 1]
+  const panelPosition: [number, number, number] = [0.55, 0.375, BASE_Z_POSITION]
   const totalProjectSections = PROJECT_SECTIONS_ARRAY.length
   
   const isProjectsPanel = label === 'Projects'
@@ -2149,6 +2153,8 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
                       return -depthOffset * t
                     } else if (s > transitionEnd) {
                       return -depthOffset
+                    } else if (s < transitionStart) {
+                      return -depthOffset
                     }
                     return 0
                   }),
@@ -2158,6 +2164,8 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
                       const t = (s - transitionStart) / (transitionEnd - transitionStart)
                       z = -depthOffset * t
                     } else if (s > transitionEnd) {
+                      z = -depthOffset
+                    } else if (s < transitionStart) {
                       z = -depthOffset
                     }
                     return 1 - (Math.abs(z) / depthOffset) * 0.1
@@ -2326,18 +2334,18 @@ export function FloatingIcons() {
   // Icons with white disc base
   const icons = [
     // Top row (3 icons)
-    { position: [0.2, 0.55, 1] as [number, number, number], color: '#FFFFFF', iconType: 'folder', label: 'Experience' }, // Top-left - Experience
-    { position: [0.55, 0.55, 1] as [number, number, number], color: '#FFFFFF', iconType: 'briefcase', label: 'Projects' }, // Top-middle - Work
-    { position: [0.9, 0.55, 1] as [number, number, number], color: '#6D8196', iconType: 'paper', label: 'Resume' }, // Top-right - Resume
+    { position: [0.2, 0.55, BASE_Z_POSITION] as [number, number, number], color: '#FFFFFF', iconType: 'folder', label: 'Experience' }, // Top-left - Experience
+    { position: [0.55, 0.55, BASE_Z_POSITION] as [number, number, number], color: '#FFFFFF', iconType: 'briefcase', label: 'Projects' }, // Top-middle - Work
+    { position: [0.9, 0.55, BASE_Z_POSITION] as [number, number, number], color: '#6D8196', iconType: 'paper', label: 'Resume' }, // Top-right - Resume
     
     // Bottom row (1 icon with white disc)
-    { position: [0.2, 0.2, 1] as [number, number, number], color: '#6D8196', iconType: 'envelope', label: 'Contact Me' }, // Bottom-left - Contact Me
+    { position: [0.2, 0.2, BASE_Z_POSITION] as [number, number, number], color: '#6D8196', iconType: 'envelope', label: 'Contact Me' }, // Bottom-left - Contact Me
   ]
   
   // Standalone GLB icons (no white disc)
   const standaloneIcons = [
-    { position: [0.55, 0.2, 1] as [number, number, number], label: 'GitHub', type: 'github' }, // Bottom-middle - GitHub
-    { position: [0.9, 0.2, 1] as [number, number, number], label: 'LinkedIn', type: 'linkedin' }, // Bottom-right - LinkedIn
+    { position: [0.55, 0.2, BASE_Z_POSITION] as [number, number, number], label: 'GitHub', type: 'github' }, // Bottom-middle - GitHub
+    { position: [0.9, 0.2, BASE_Z_POSITION] as [number, number, number], label: 'LinkedIn', type: 'linkedin' }, // Bottom-right - LinkedIn
   ]
 
   const handleIconClick = (label: string) => {
@@ -2460,7 +2468,7 @@ export function FloatingIcons() {
       
       {/* Home Toggle Button - always visible */}
       <HomeToggleButton
-        position={panelState.isOpen && panelState.label === 'Projects' ? [-0.155, 0.25, 1] : [0.55, -0.2, 1]}
+        position={panelState.isOpen && panelState.label === 'Projects' ? [-0.155, 0.25, BASE_Z_POSITION] : [0.55, -0.2, BASE_Z_POSITION]}
         showDots={showingHome}
         onClick={handleToggleHome}
       />    </group>

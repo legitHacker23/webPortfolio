@@ -11,17 +11,18 @@ export const PROJECT_SECTIONS = [
     image: '/assets/rice.png'
   },
   {
-    title: 'Project 2: AWS YouTube Trend Prediction',
-    description: 'A cloud-based platform that processes over 75,000 ingestion zevents to predict trending YouTube videos. Built with AWS services including Lambda, S3, and DynamoDB.',
+    title: 'Posture Detection Application',
+    description: 'Developed a real-time posture monitoring MacOS application by collecting 30,000+ posture data samples, training a Decision Tree Regressor model achieving 98% accuracy, and deploying CoreML inference with Vision pose detection. Tech Stack: Swift, Python, Scikit-learn, Pandas',
     image: '/assets/postureproject.png'
   },
   {
-    title: 'Project 3: Data Analysis Dashboard',
-    description: 'An interactive dashboard for visualizing and analyzing large datasets. Features real-time updates and custom filtering capabilities.'
+    title: 'Smart Mirror',
+    description: 'Designed a voice-activated smart mirror featuring a modern, responsive UI that uses speech recognition and Gemini 2.0 Flash to answer real-time questions about weather, calendar events, and stock prices. Tech Stack: React, Flask',
+    image: '/assets/magicMirror.png'
   },
   {
-    title: 'Magic Mirror',
-    description: 'Built a fully functional AI assistant that uses voice transcription and gemini to answer real time question regarding weather and personal schedules.'
+    title: 'Youtube Smart Clipping Pipeline',
+    description: ''
   }
 ]
 
@@ -34,22 +35,55 @@ function ProjectScreenshotInternal({ imagePath, position, width = 1, height = 1 
 }) {
   const texture = useTexture(imagePath)
   
-  // Reset texture to fill the panel (no aspect ratio preservation)
+  // Adjust texture to fill the panel properly (cover mode - fills entire panel)
   React.useEffect(() => {
-    if (texture) {
-      texture.repeat.set(1, 1)
-      texture.offset.set(0, 0)
+    if (texture && texture.image) {
+      const imageAspect = texture.image.width / texture.image.height
+      const panelAspect = width / height
+      
+      // Check if this is the posture project image
+      const isPostureProject = imagePath.includes('postureproject')
+      
+      // Always fill the entire panel - use cover mode
+      if (imageAspect > panelAspect) {
+        // Image is wider than panel - fit height (fill vertical), crop sides
+        const scale = imageAspect / panelAspect
+        texture.repeat.set(scale, 1)
+        const xOffset = (1 - scale) / 2
+        // For posture project, shift up by adjusting Y offset (positive = show more top)
+        const yOffset = isPostureProject ? 0.2 : 0
+        texture.offset.set(xOffset, yOffset)
+      } else {
+        // Image is taller than panel - fit width (fill horizontal), crop top/bottom
+        // Scale to fill width, which means scaling up vertically
+        const scale = panelAspect / imageAspect
+        texture.repeat.set(1, scale)
+        // Offset to center vertically
+        let centerOffset = (1 - 1/scale) / 2
+        // For posture project, shift up (add to offset to show more top)
+        if (isPostureProject) {
+          centerOffset += 0.2  // Positive offset shows more of the top
+        }
+        texture.offset.set(0, centerOffset)
+      }
+      
+      texture.wrapS = THREE.ClampToEdgeWrapping
+      texture.wrapT = THREE.ClampToEdgeWrapping
       texture.needsUpdate = true
     }
-  }, [texture])
+  }, [texture, width, height, imagePath])
+  
+  // Check if this is the posture project for shader adjustment
+  const isPostureProject = imagePath.includes('postureproject')
   
   // Shader material with image and bottom fade gradient
   const material = React.useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
         uTexture: { value: texture },
-        uFadeStart: { value: 0.85 }, // Start fade at 30% from bottom
-        uFadeEnd: { value: 0.0 }    // Full black at bottom
+        uFadeStart: { value: 1 }, // Start fade at 30% from bottom
+        uFadeEnd: { value: 0.0 },    // Full black at bottom
+        uVerticalShift: { value: isPostureProject ? -0.025 : 0.0 }  // Shift for posture project
       },
       vertexShader: `
         varying vec2 vUv;
@@ -62,6 +96,7 @@ function ProjectScreenshotInternal({ imagePath, position, width = 1, height = 1 
         uniform sampler2D uTexture;
         uniform float uFadeStart;
         uniform float uFadeEnd;
+        uniform float uVerticalShift;
         varying vec2 vUv;
         
         void main() {
@@ -81,7 +116,12 @@ function ProjectScreenshotInternal({ imagePath, position, width = 1, height = 1 
             discard;
           }
           
-          vec4 texColor = texture2D(uTexture, vUv);
+          // Adjust UV coordinates to shift image up (positive shift shows more top)
+          vec2 adjustedUv = vec2(vUv.x, vUv.y + uVerticalShift);
+          // Clamp to valid UV range
+          adjustedUv.y = clamp(adjustedUv.y, 0.0, 1.0);
+          
+          vec4 texColor = texture2D(uTexture, adjustedUv);
           
           // Calculate fade based on vertical position (vUv.y: 0 = bottom, 1 = top)
           float fadeFactor = smoothstep(uFadeEnd, uFadeStart, vUv.y);
@@ -93,7 +133,7 @@ function ProjectScreenshotInternal({ imagePath, position, width = 1, height = 1 
         }
       `
     })
-  }, [texture])
+  }, [texture, isPostureProject])
   
   // Update texture uniform when it loads
   React.useEffect(() => {
@@ -237,27 +277,37 @@ export function ProjectPanel3({ position }: ProjectPanel3Props) {
   
   return (
     <group position={position}>
-      {/* Title */}
+      {/* Image on the right - behind text */}
+      {section.image && (
+        <ProjectScreenshot
+          imagePath={section.image}
+          position={[0, 0, -0.01]}
+          width={1.2}
+          height={0.9}
+        />
+      )}
+      
+      {/* Title on the left - in front of image */}
       <Text
-        position={[0, 0, 0]}
-        fontSize={0.04}
+        position={[-0.5, -0.15, 0.02]}
+        fontSize={0.035}
         color="#FFFFFF"
         anchorX="left"
         anchorY="top"
         fontWeight="bold"
-        maxWidth={0.75}
+        maxWidth={0.35}
       >
         {section.title}
       </Text>
       
-      {/* Description */}
+      {/* Description on the left, below title - in front of image */}
       <Text
-        position={[0, -0.12, 0]}
-        fontSize={0.027}
+        position={[-0.5, -0.25, 0.02]}
+        fontSize={0.024}
         color="#FFFFFF"
         anchorX="left"
         anchorY="top"
-        maxWidth={0.75}
+        maxWidth={0.8}
         lineHeight={1.3}
         textAlign="left"
       >
