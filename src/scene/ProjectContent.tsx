@@ -22,7 +22,13 @@ export const PROJECT_SECTIONS = [
   },
   {
     title: 'Youtube Smart Clipping Pipeline',
-    description: ''
+    description: '',
+    image: '/assets/ytbig-data.png'
+  },
+  {
+    title: '3D Portfolio Website',
+    description: 'Built an immersive 3D portfolio website with interactive floating panels, smooth animations, and a virtual environment. Tech Stack: React, TypeScript, Three.js, Vite',
+    image: '/assets/portfolio.png'
   }
 ]
 
@@ -327,27 +333,37 @@ export function ProjectPanel4({ position }: ProjectPanel4Props) {
   
   return (
     <group position={position}>
-      {/* Title */}
+      {/* Image on the right - behind text */}
+      {section.image && (
+        <ProjectScreenshot
+          imagePath={section.image}
+          position={[0, 0, -0.01]}
+          width={1.2}
+          height={0.9}
+        />
+      )}
+      
+      {/* Title on the left - in front of image */}
       <Text
-        position={[0, 0, 0]}
-        fontSize={0.04}
+        position={[-0.5, -0.15, 0.02]}
+        fontSize={0.035}
         color="#FFFFFF"
         anchorX="left"
         anchorY="top"
         fontWeight="bold"
-        maxWidth={0.75}
+        maxWidth={0.35}
       >
         {section.title}
       </Text>
       
-      {/* Description */}
+      {/* Description on the left, below title - in front of image */}
       <Text
-        position={[0, -0.12, 0]}
-        fontSize={0.027}
+        position={[-0.5, -0.25, 0.02]}
+        fontSize={0.024}
         color="#FFFFFF"
         anchorX="left"
         anchorY="top"
-        maxWidth={0.75}
+        maxWidth={0.8}
         lineHeight={1.3}
         textAlign="left"
       >
@@ -367,27 +383,37 @@ export function ProjectPanel5({ position }: ProjectPanel5Props) {
   
   return (
     <group position={position}>
-      {/* Title */}
+      {/* Image on the right - behind text */}
+      {section.image && (
+        <ProjectScreenshot
+          imagePath={section.image}
+          position={[0, 0, -0.01]}
+          width={1.2}
+          height={0.9}
+        />
+      )}
+      
+      {/* Title on the left - in front of image */}
       <Text
-        position={[0, 0, 0]}
-        fontSize={0.04}
+        position={[-0.5, -0.15, 0.02]}
+        fontSize={0.035}
         color="#FFFFFF"
         anchorX="left"
         anchorY="top"
         fontWeight="bold"
-        maxWidth={0.75}
+        maxWidth={0.35}
       >
         {section.title}
       </Text>
       
-      {/* Description */}
+      {/* Description on the left, below title - in front of image */}
       <Text
-        position={[0, -0.12, 0]}
-        fontSize={0.027}
+        position={[-0.5, -0.25, 0.02]}
+        fontSize={0.024}
         color="#FFFFFF"
         anchorX="left"
         anchorY="top"
-        maxWidth={0.75}
+        maxWidth={0.8}
         lineHeight={1.3}
         textAlign="left"
       >
@@ -578,5 +604,7 @@ export const PROJECT_PANELS = [
   ProjectPanel1,
   ProjectPanel2,
   ProjectPanel3,
+  ProjectPanel4,
+  ProjectPanel5,
 ]
 

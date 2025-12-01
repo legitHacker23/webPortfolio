@@ -295,7 +295,7 @@ function DragCameraRig() {
 export function HeroStage() {
   return (
     <Canvas
-      dpr={[1, 2]}
+      dpr={[1, 1.51]}
       shadows
       camera={{ position: CAMERA_BASE_POSITION, fov: CAMERA_FOV }}
       gl={{ 

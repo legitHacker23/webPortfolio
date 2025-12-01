@@ -3,7 +3,7 @@ import { useSpring, animated } from '@react-spring/three'
 import { RoundedBox, Text, MeshTransmissionMaterial, useTexture, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import emailjs from '@emailjs/browser'
-import { PROJECT_SECTIONS, PROJECT_SECTIONS_ARRAY, ProjectPanel1, ProjectPanel2, ProjectPanel3 } from './ProjectContent'
+import { PROJECT_SECTIONS, PROJECT_SECTIONS_ARRAY, ProjectPanel1, ProjectPanel2, ProjectPanel3, ProjectPanel4, ProjectPanel5 } from './ProjectContent'
 
 // Base Z position for all UI elements - adjust to move everything forward/back
 // Lower values = closer to camera, Higher values = further from camera
@@ -1528,9 +1528,13 @@ function ContactFormPanel({ onBack }: ContactFormPanelProps) {
 }
 
 // Small Menu Panel - appears when Projects panel is open
-function SmallMenuPanel() {
+interface SmallMenuPanelProps {
+  activePanelIndex: number
+}
+
+function SmallMenuPanel({ activePanelIndex }: SmallMenuPanelProps) {
   // Small panel dimensions
-  const panelWidth = 0.15
+  const panelWidth = 0.25
   const panelHeight = 0.05
   const panelPosition: [number, number, number] = [0.4, 0.15, BASE_Z_POSITION + 0.02] // Positioned to the right of main panel
   
@@ -1540,6 +1544,9 @@ function SmallMenuPanel() {
     to: { scale: 1, opacity: 1 },
     config: { tension: 280, friction: 26 }
   })
+  
+  // Total number of panels
+  const totalPanels = 5
   
   return (
     <animated.group scale={scale} rotation={[0, 0, Math.PI / 2]}>      {/* Small Menu Panel */}
@@ -1593,25 +1600,31 @@ function SmallMenuPanel() {
         />
       </mesh>
       
-      {/* Three Dots */}
+      {/* Five Dots - animated based on active panel */}
       <group position={[panelPosition[0], panelPosition[1], panelPosition[2] + 0.015]}>
-        {/* Dot 3 */}
-        <mesh position={[-0.05, 0, 0]}>
-          <circleGeometry args={[0.01, 32]} />
-          <meshBasicMaterial color="#FFFFFF" />
-        </mesh>
-        
-        {/* Dot 2 */}
-        <mesh position={[0, 0, 0]}>
-          <circleGeometry args={[0.01, 32]} />
-          <meshBasicMaterial color="#FFFFFF" />
-        </mesh>
-        
-        {/* Dot 1 */}
-        <mesh position={[0.05, 0, 0]}>
-          <circleGeometry args={[0.01, 32]} />
-          <meshBasicMaterial color="#FFFFFF" />
-        </mesh>
+        {Array.from({ length: totalPanels }).map((_, index) => {
+          // Calculate position for each dot
+          // index 0 = leftmost dot (panel 0), index 4 = rightmost dot (panel 4)
+          const spacing = 0.045
+          const positionX = (index - (totalPanels - 1) / 2) * spacing
+          
+          // Determine if this dot is active (matches the active panel index)
+          // Reverse mapping: panel 0 (top) -> dot index 4 (top visually), panel 4 (bottom) -> dot index 0 (bottom visually)
+          const isActive = (totalPanels - 1 - index) === activePanelIndex
+          
+          // Animate color based on active state
+          const { color } = useSpring({
+            color: isActive ? '#FFFFFF' : '#D3D3D3',
+            config: { tension: 300, friction: 25 }
+          })
+          
+          return (
+            <animated.mesh key={index} position={[positionX, 0, 0]}>
+              <circleGeometry args={[0.01, 32]} />
+              <animated.meshBasicMaterial color={color} />
+            </animated.mesh>
+          )
+        })}
       </group>
     </animated.group>
   )
@@ -1693,9 +1706,10 @@ interface FloatingPanelProps {
     name?: string
   }
   hideBackButton?: boolean
+  onActivePanelChange?: (index: number) => void
 }
 
-function FloatingPanel({ label, onBack, content, hideBackButton = false }: FloatingPanelProps) {
+function FloatingPanel({ label, onBack, content, hideBackButton = false, onActivePanelChange }: FloatingPanelProps) {
   const [backHovered, setBackHovered] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [scrollOffset, setScrollOffset] = useState(0) // Continuous scroll offset in 3D units
@@ -1729,6 +1743,17 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
       friction: 30   // Balanced friction for natural deceleration
     }
   })
+  
+  // Calculate active panel index based on scroll offset
+  useEffect(() => {
+    if (!isProjectsPanel || !onActivePanelChange) return
+    
+    // Calculate which panel is closest to the center based on target scroll offset
+    // Panel 0 is at scroll 0, Panel 1 is at scroll 1.0, etc.
+    const closestPanel = Math.round(targetScrollOffset / panelSpacing)
+    const activeIndex = Math.max(0, Math.min(totalProjects - 1, closestPanel))
+    onActivePanelChange(activeIndex)
+  }, [isProjectsPanel, onActivePanelChange, targetScrollOffset, panelSpacing, totalProjects])
   
   const panelShape = useMemo(() => {
     const radius = 0.08
@@ -2136,7 +2161,7 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
               </mesh>
               
               {/* iOS-style stacked project panels */}
-              {[ProjectPanel1, ProjectPanel2, ProjectPanel3].map((ProjectComponent, index) => {
+              {[ProjectPanel1, ProjectPanel2, ProjectPanel3, ProjectPanel4, ProjectPanel5].map((ProjectComponent, index) => {
                 // Calculate position based on scroll offset
                 const baseY = -index * panelSpacing
                 const transitionStart = index * panelSpacing
@@ -2289,6 +2314,9 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false }: Float
 export function FloatingIcons() {
   // State to track home vs icons view
   const [showingHome, setShowingHome] = useState(true)
+  
+  // State to track active panel index for Projects panel
+  const [activePanelIndex, setActivePanelIndex] = useState(4)
   
   const [panelState, setPanelState] = useState<{ 
     isOpen: boolean
@@ -2459,16 +2487,17 @@ export function FloatingIcons() {
               label={panelState.label}
               onBack={handleBack}
               content={panelState.content}
+              onActivePanelChange={setActivePanelIndex}
             />
             {/* Small Menu Panel - only show when Projects panel is open */}
-            {panelState.label === 'Projects' && <SmallMenuPanel />}
+            {panelState.label === 'Projects' && <SmallMenuPanel activePanelIndex={activePanelIndex} />}
           </>
         )
       )}
       
       {/* Home Toggle Button - always visible */}
       <HomeToggleButton
-        position={panelState.isOpen && panelState.label === 'Projects' ? [-0.155, 0.25, BASE_Z_POSITION] : [0.55, -0.2, BASE_Z_POSITION]}
+        position={panelState.isOpen && panelState.label === 'Projects' ? [-0.155, 0.175, BASE_Z_POSITION] : [0.55, -0.2, BASE_Z_POSITION]}
         showDots={showingHome}
         onClick={handleToggleHome}
       />    </group>
