@@ -160,9 +160,15 @@ function FolderIcon() {
 
 // 3D Paper Icon - light grey document with folded corner and text lines
 function PaperIcon() {
+  const textLines = [
+    { position: [-0.01, 0.015, 0.0035] as [number, number, number], width: 0.02 },
+    { position: [0, 0.005, 0.0035] as [number, number, number], width: 0.03 },
+    { position: [0, -0.005, 0.0035] as [number, number, number], width: 0.03 },
+    { position: [0, -0.015, 0.0035] as [number, number, number], width: 0.04 },
+  ]
+  
   return (
     <group position={[0, 0, 0.02]} rotation={[0, 0, 0]} scale={[2, 2, 2]}>
-      {/* Main paper body - light grey with rounded edges */}
       <RoundedBox 
         position={[0, 0, 0]} 
         args={[0.05, 0.06, 0.006]} 
@@ -170,73 +176,21 @@ function PaperIcon() {
         smoothness={4}
         castShadow
       >
-        <meshStandardMaterial 
-          color="#E8E8E8" 
-          metalness={0.0} 
-          roughness={1.0}
-        />
+        <meshStandardMaterial color="#E8E8E8" metalness={0.0} roughness={1.0} />
       </RoundedBox>
       
-      {/* Text lines - horizontal grey bars */}
-      {/* Top line - shortest */}
-      <RoundedBox 
-        position={[-0.01, 0.015, 0.0035]} 
-        args={[0.02, 0.002, 0.003]} 
-        radius={0.0005}
-        smoothness={2}
-        castShadow
-      >
-        <meshStandardMaterial 
-          color="#808080" 
-          metalness={0.0} 
-          roughness={1.0}
-        />
-      </RoundedBox>
-      
-      {/* Second line - longer */}
-      <RoundedBox 
-        position={[0, 0.005, 0.0035]} 
-        args={[0.03, 0.002, 0.003]} 
-        radius={0.0005}
-        smoothness={2}
-        castShadow
-      >
-        <meshStandardMaterial 
-          color="#808080" 
-          metalness={0.0} 
-          roughness={1.0}
-        />
-      </RoundedBox>
-      
-      {/* Third line - similar length */}
-      <RoundedBox 
-        position={[0, -0.005, 0.0035]} 
-        args={[0.03, 0.002, 0.003]} 
-        radius={0.0005}
-        smoothness={2}
-        castShadow
-      >
-        <meshStandardMaterial 
-          color="#808080" 
-          metalness={0.0} 
-          roughness={1.0}
-        />
-      </RoundedBox>
-      
-      {/* Fourth line - longest */}
-      <RoundedBox 
-        position={[0, -0.015, 0.0035]} 
-        args={[0.04, 0.002, 0.003]} 
-        radius={0.0005}
-        smoothness={2}
-        castShadow
-      >
-        <meshStandardMaterial 
-          color="#808080" 
-          metalness={0.0} 
-          roughness={1.0}
-        />
-      </RoundedBox>
+      {textLines.map((line, i) => (
+        <RoundedBox 
+          key={i}
+          position={line.position}
+          args={[line.width, 0.002, 0.003]}
+          radius={0.0005}
+          smoothness={2}
+          castShadow
+        >
+          <meshStandardMaterial color="#808080" metalness={0.0} roughness={1.0} />
+        </RoundedBox>
+      ))}
     </group>
   )
 }
@@ -620,12 +574,31 @@ function LinkedInIcon() {
   )
 }
 
-// Standalone GitHub Icon Component (no white disc base)
-function StandaloneGitHubIcon({ position, label, onClick }: { position: [number, number, number]; label: string; onClick?: () => void }) {
+// Unified Standalone Icon Component
+interface StandaloneIconProps {
+  position: [number, number, number]
+  label: string
+  onClick?: () => void
+  modelPath: string
+  groupPosition: [number, number, number]
+  groupScale: [number, number, number]
+  groupRotation?: [number, number, number]
+  clickedScale?: number
+}
+
+function StandaloneIcon({ 
+  position, 
+  label, 
+  onClick, 
+  modelPath, 
+  groupPosition, 
+  groupScale, 
+  groupRotation = [0, 0, 0],
+  clickedScale = 0.85
+}: StandaloneIconProps) {
   const [hovered, setHovered] = useState(false)
   const [clicked, setClicked] = useState(false)
-  
-  const { scene } = useGLTF('/assets/github.glb')
+  const { scene } = useGLTF(modelPath)
   
   useEffect(() => {
     scene.traverse((child) => {
@@ -638,7 +611,7 @@ function StandaloneGitHubIcon({ position, label, onClick }: { position: [number,
   
   const { positionZ, scale } = useSpring({
     positionZ: clicked ? position[2] - 0.03 : hovered ? position[2] - 0.015 : position[2],
-    scale: clicked ? 1 : hovered ? 0.9 : 1.0,
+    scale: clicked ? clickedScale : hovered ? 0.9 : 1.0,
     config: { tension: 300, friction: 20 }
   })
 
@@ -659,11 +632,10 @@ function StandaloneGitHubIcon({ position, label, onClick }: { position: [number,
         onPointerLeave={() => setHovered(false)}
         onClick={handleClick}
       >
-        <group position={[0,0,0.05]} scale={[0.4, 0.4, 0.4]} rotation={[-0.05 , -0.33, 0]}>
+        <group position={groupPosition} scale={groupScale} rotation={groupRotation}>
           <primitive object={scene} />
         </group>
         
-        {/* 3D Text Label */}
         {label && (
           <Text
             position={[0, -0.15, 0]}
@@ -681,64 +653,34 @@ function StandaloneGitHubIcon({ position, label, onClick }: { position: [number,
   )
 }
 
+// Standalone GitHub Icon Component (no white disc base)
+function StandaloneGitHubIcon({ position, label, onClick }: { position: [number, number, number]; label: string; onClick?: () => void }) {
+  return (
+    <StandaloneIcon
+      position={position}
+      label={label}
+      onClick={onClick}
+      modelPath="/assets/github.glb"
+      groupPosition={[0, 0, 0.05]}
+      groupScale={[0.4, 0.4, 0.4]}
+      groupRotation={[-0.05, -0.33, 0]}
+      clickedScale={1}
+    />
+  )
+}
+
 // Standalone LinkedIn Icon Component (no white disc base)
 function StandaloneLinkedInIcon({ position, label, onClick }: { position: [number, number, number]; label: string; onClick?: () => void }) {
-  const [hovered, setHovered] = useState(false)
-  const [clicked, setClicked] = useState(false)
-  
-  const { scene } = useGLTF('/assets/linkedin.glb')
-  
-  useEffect(() => {
-    scene.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.castShadow = true
-        child.receiveShadow = false
-      }
-    })
-  }, [scene])
-  
-  const { positionZ, scale } = useSpring({
-    positionZ: clicked ? position[2] - 0.03 : hovered ? position[2] - 0.015 : position[2],
-    scale: clicked ? 0.85 : hovered ? 0.9 : 1.0,
-    config: { tension: 300, friction: 20 }
-  })
-
-  const handleClick = () => {
-    setClicked(true)
-    setTimeout(() => setClicked(false), 150)
-    if (onClick) onClick()
-  }
-
   return (
-    <Suspense fallback={null}>
-      <animated.group 
-        position-x={position[0]}
-        position-y={position[1]}
-        position-z={positionZ}
-        scale={scale}
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
-        onClick={handleClick}
-      >
-        <group position={[0,0, -0.01]} scale={[0.125, 0.125, 0.125]}>
-          <primitive object={scene} />
-        </group>
-        
-        {/* 3D Text Label */}
-        {label && (
-          <Text
-            position={[0, -0.15, 0]}
-            fontSize={0.025}
-            color="#FFFFFF"
-            anchorX="center"
-            outlineWidth={0.0002}
-            outlineColor="#ffffff"
-          >
-            {label}
-          </Text>
-        )}
-      </animated.group>
-    </Suspense>
+    <StandaloneIcon
+      position={position}
+      label={label}
+      onClick={onClick}
+      modelPath="/assets/linkedin.glb"
+      groupPosition={[0, 0, -0.01]}
+      groupScale={[0.125, 0.125, 0.125]}
+      clickedScale={0.85}
+    />
   )
 }
 

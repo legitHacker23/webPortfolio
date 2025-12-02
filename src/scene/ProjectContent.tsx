@@ -177,250 +177,88 @@ function ProjectScreenshot({ imagePath, position, width = 1, height = 0.3 }: {
   )
 }
 
-// Project Panel 1 - Rice University AI Course Catalog (with image)
+// Unified Project Panel Component
+interface ProjectPanelProps {
+  position: [number, number, number]
+  sectionIndex: number
+}
+
+export function ProjectPanel({ position, sectionIndex }: ProjectPanelProps) {
+  const section = PROJECT_SECTIONS[sectionIndex]
+  
+  return (
+    <group position={position}>
+      {section.image && (
+        <ProjectScreenshot
+          imagePath={section.image}
+          position={[0, 0, -0.01]}
+          width={1.2}
+          height={0.9}
+        />
+      )}
+      
+      <Text
+        position={[-0.5, -0.15, 0.02]}
+        fontSize={0.035}
+        color="#FFFFFF"
+        anchorX="left"
+        anchorY="top"
+        fontWeight="bold"
+        maxWidth={0.35}
+      >
+        {section.title}
+      </Text>
+      
+      <Text
+        position={[-0.5, -0.25, 0.02]}
+        fontSize={0.024}
+        color="#FFFFFF"
+        anchorX="left"
+        anchorY="top"
+        maxWidth={0.8}
+        lineHeight={1.3}
+        textAlign="left"
+      >
+        {section.description}
+      </Text>
+    </group>
+  )
+}
+
+// Backwards compatibility exports
 interface ProjectPanel1Props {
   position: [number, number, number]
 }
-
 export function ProjectPanel1({ position }: ProjectPanel1Props) {
-  const section = PROJECT_SECTIONS[0]
-  
-  return (
-    <group position={position}>
-      {/* Image on the right - behind text */}
-      <ProjectScreenshot
-        imagePath={section.image!}
-        position={[0, 0, -0.01]}
-        width={1.2}
-        height={0.9}
-      />
-      
-      {/* Title on the left - in front of image */}
-      <Text
-        position={[-0.5, -0.15, 0.02]}
-        fontSize={0.035}
-        color="#FFFFFF"
-        anchorX="left"
-        anchorY="top"
-        fontWeight="bold"
-        maxWidth={0.35}
-      >
-        {section.title}
-      </Text>
-      
-      {/* Description on the left, below title - in front of image */}
-      <Text
-        position={[-0.5, -0.25, 0.02]}
-        fontSize={0.024}
-        color="#FFFFFF"
-        anchorX="left"
-        anchorY="top"
-        maxWidth={0.8}
-        lineHeight={1.3}
-        textAlign="left"
-      >
-        {section.description}
-      </Text>
-    </group>
-  )
+  return <ProjectPanel position={position} sectionIndex={0} />
 }
 
-// Project Panel 2 - AWS YouTube Trend Prediction
 interface ProjectPanel2Props {
   position: [number, number, number]
 }
-
 export function ProjectPanel2({ position }: ProjectPanel2Props) {
-  const section = PROJECT_SECTIONS[1]
-  
-  return (
-    <group position={position}>
-      {/* Image on the right - behind text */}
-      <ProjectScreenshot
-        imagePath={section.image!}
-        position={[0, 0, -0.01]}
-        width={1.2}
-        height={0.9}
-      />
-      
-      {/* Title on the left - in front of image */}
-      <Text
-        position={[-0.5, -0.15, 0.02]}
-        fontSize={0.035}
-        color="#FFFFFF"
-        anchorX="left"
-        anchorY="top"
-        fontWeight="bold"
-        maxWidth={0.35}
-      >
-        {section.title}
-      </Text>
-      
-      {/* Description on the left, below title - in front of image */}
-      <Text
-        position={[-0.5, -0.25, 0.02]}
-        fontSize={0.024}
-        color="#FFFFFF"
-        anchorX="left"
-        anchorY="top"
-        maxWidth={0.8}
-        lineHeight={1.3}
-        textAlign="left"
-      >
-        {section.description}
-      </Text>
-    </group>
-  )
+  return <ProjectPanel position={position} sectionIndex={1} />
 }
 
-// Project Panel 3 - Data Analysis Dashboard
 interface ProjectPanel3Props {
   position: [number, number, number]
 }
-
 export function ProjectPanel3({ position }: ProjectPanel3Props) {
-  const section = PROJECT_SECTIONS[2]
-  
-  return (
-    <group position={position}>
-      {/* Image on the right - behind text */}
-      {section.image && (
-        <ProjectScreenshot
-          imagePath={section.image}
-          position={[0, 0, -0.01]}
-          width={1.2}
-          height={0.9}
-        />
-      )}
-      
-      {/* Title on the left - in front of image */}
-      <Text
-        position={[-0.5, -0.15, 0.02]}
-        fontSize={0.035}
-        color="#FFFFFF"
-        anchorX="left"
-        anchorY="top"
-        fontWeight="bold"
-        maxWidth={0.35}
-      >
-        {section.title}
-      </Text>
-      
-      {/* Description on the left, below title - in front of image */}
-      <Text
-        position={[-0.5, -0.25, 0.02]}
-        fontSize={0.024}
-        color="#FFFFFF"
-        anchorX="left"
-        anchorY="top"
-        maxWidth={0.8}
-        lineHeight={1.3}
-        textAlign="left"
-      >
-        {section.description}
-      </Text>
-    </group>
-  )
+  return <ProjectPanel position={position} sectionIndex={2} />
 }
 
-// Project Panel 4 - Machine Learning Pipeline
 interface ProjectPanel4Props {
   position: [number, number, number]
 }
-
 export function ProjectPanel4({ position }: ProjectPanel4Props) {
-  const section = PROJECT_SECTIONS[3]
-  
-  return (
-    <group position={position}>
-      {/* Image on the right - behind text */}
-      {section.image && (
-        <ProjectScreenshot
-          imagePath={section.image}
-          position={[0, 0, -0.01]}
-          width={1.2}
-          height={0.9}
-        />
-      )}
-      
-      {/* Title on the left - in front of image */}
-      <Text
-        position={[-0.5, -0.15, 0.02]}
-        fontSize={0.035}
-        color="#FFFFFF"
-        anchorX="left"
-        anchorY="top"
-        fontWeight="bold"
-        maxWidth={0.35}
-      >
-        {section.title}
-      </Text>
-      
-      {/* Description on the left, below title - in front of image */}
-      <Text
-        position={[-0.5, -0.25, 0.02]}
-        fontSize={0.024}
-        color="#FFFFFF"
-        anchorX="left"
-        anchorY="top"
-        maxWidth={0.8}
-        lineHeight={1.3}
-        textAlign="left"
-      >
-        {section.description}
-      </Text>
-    </group>
-  )
+  return <ProjectPanel position={position} sectionIndex={3} />
 }
 
-// Project Panel 5 - Web Application Framework
 interface ProjectPanel5Props {
   position: [number, number, number]
 }
-
 export function ProjectPanel5({ position }: ProjectPanel5Props) {
-  const section = PROJECT_SECTIONS[4]
-  
-  return (
-    <group position={position}>
-      {/* Image on the right - behind text */}
-      {section.image && (
-        <ProjectScreenshot
-          imagePath={section.image}
-          position={[0, 0, -0.01]}
-          width={1.2}
-          height={0.9}
-        />
-      )}
-      
-      {/* Title on the left - in front of image */}
-      <Text
-        position={[-0.5, -0.15, 0.02]}
-        fontSize={0.035}
-        color="#FFFFFF"
-        anchorX="left"
-        anchorY="top"
-        fontWeight="bold"
-        maxWidth={0.35}
-      >
-        {section.title}
-      </Text>
-      
-      {/* Description on the left, below title - in front of image */}
-      <Text
-        position={[-0.5, -0.25, 0.02]}
-        fontSize={0.024}
-        color="#FFFFFF"
-        anchorX="left"
-        anchorY="top"
-        maxWidth={0.8}
-        lineHeight={1.3}
-        textAlign="left"
-      >
-        {section.description}
-      </Text>
-    </group>
-  )
+  return <ProjectPanel position={position} sectionIndex={4} />
 }
 
 // Section Border Component
@@ -484,112 +322,52 @@ function SectionBorder({
   )
 }
 
-// Section 1 - AI & Cloud Projects
+// Unified Project Section Component
+interface ProjectSectionProps {
+  position: [number, number, number]
+  title: string
+  panelIndex: number
+}
+
+export function ProjectSection({ position, title, panelIndex }: ProjectSectionProps) {
+  return (
+    <group position={position}>
+      <SectionBorder width={1.2} height={0.9} position={[0, 0, -0.001]} />
+      <Text
+        position={[0, 0.25, 0]}
+        fontSize={0.045}
+        color="#FFFFFF"
+        anchorX="center"
+        anchorY="top"
+        fontWeight="bold"
+      >
+        {title}
+      </Text>
+      <ProjectPanel position={[0, 0, 0]} sectionIndex={panelIndex} />
+    </group>
+  )
+}
+
+// Backwards compatibility exports
 interface ProjectSection1Props {
   position: [number, number, number]
 }
-
 export function ProjectSection1({ position }: ProjectSection1Props) {
-  const sectionWidth = 1.2  // Match panel width
-  const sectionHeight = 0.9 // Match panel height
-  
-  return (
-    <group position={position}>
-      {/* Section Border */}
-      <SectionBorder 
-        width={sectionWidth}
-        height={sectionHeight}
-        position={[0, 0, -0.001]}
-      />
-      
-      {/* Section Title */}
-      <Text
-        position={[0, 0.25, 0]}
-        fontSize={0.045}
-        color="#FFFFFF"
-        anchorX="center"
-        anchorY="top"
-        fontWeight="bold"
-      >
-        AI & Cloud Projects
-      </Text>
-      
-      {/* Project 1 - Rice University AI Course Catalog */}
-      <ProjectPanel1 position={[0, 0, 0]} />
-    </group>
-  )
+  return <ProjectSection position={position} title="AI & Cloud Projects" panelIndex={0} />
 }
 
-// Section 2 - AWS & Cloud Projects
 interface ProjectSection2Props {
   position: [number, number, number]
 }
-
 export function ProjectSection2({ position }: ProjectSection2Props) {
-  const sectionWidth = 1.2  // Match panel width
-  const sectionHeight = 0.9 // Match panel height
-  
-  return (
-    <group position={position}>
-      {/* Section Border */}
-      <SectionBorder 
-        width={sectionWidth}
-        height={sectionHeight}
-        position={[0, 0, -0.001]}
-      />
-      
-      {/* Section Title */}
-      <Text
-        position={[0, 0.25, 0]}
-        fontSize={0.045}
-        color="#FFFFFF"
-        anchorX="center"
-        anchorY="top"
-        fontWeight="bold"
-      >
-        AWS & Cloud Projects
-      </Text>
-      
-      {/* Project 2 - AWS YouTube Trend Prediction */}
-      <ProjectPanel2 position={[0, 0, 0]} />
-    </group>
-  )
+  return <ProjectSection position={position} title="AWS & Cloud Projects" panelIndex={1} />
 }
 
-// Section 3 - Data & Analytics Projects
 interface ProjectSection3Props {
   position: [number, number, number]
 }
-
 export function ProjectSection3({ position }: ProjectSection3Props) {
-  const sectionWidth = 1.2  // Match panel width
-  const sectionHeight = 0.9 // Match panel height
-  
-  return (
-    <group position={position}>
-      {/* Section Border */}
-      <SectionBorder 
-        width={sectionWidth}
-        height={sectionHeight}
-        position={[0, 0, -0.001]}
-      />
-      
-      {/* Section Title */}
-      <Text
-        position={[0, 0.25, 0]}
-        fontSize={0.045}
-        color="#FFFFFF"
-        anchorX="center"
-        anchorY="top"
-        fontWeight="bold"
-      >
-        Data & Analytics Projects
-      </Text>
-      
-      {/* Project 3 - Data Analysis Dashboard */}
-      <ProjectPanel3 position={[0, 0, 0]} />
-    </group>
-  )
+  return <ProjectSection position={position} title="Data & Analytics Projects" panelIndex={2} />
 }
 
 // Array of section components for scrolling
