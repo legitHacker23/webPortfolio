@@ -5,7 +5,7 @@ import { PerspectiveCamera } from 'three'
 import { Environment } from './Environment'
 import { FloatingIcons } from './FloatingIcons'
 
-function ShadowLight() {
+function ShadowLight({ shadowMapSize }: { shadowMapSize: number }) {
   const lightRef = useRef<THREE.DirectionalLight>(null)
   const { gl } = useThree()
   
@@ -51,8 +51,8 @@ function ShadowLight() {
       intensity={5.0}
       color="#fffef8"
       castShadow
-      shadow-mapSize-width={4096}
-      shadow-mapSize-height={4096}
+      shadow-mapSize-width={shadowMapSize}
+      shadow-mapSize-height={shadowMapSize}
       shadow-bias={-0.0001}
       shadow-normalBias={0.02}
       shadow-radius={4}
@@ -292,10 +292,13 @@ function DragCameraRig() {
   return null
 }
 
-export function HeroStage() {
+export function HeroStage({ isMobile = false }: { isMobile?: boolean }) {
+  const shadowMapSize = isMobile ? 1024 : 2048
+  const dprSetting: [number, number] = [1, isMobile ? 1 : 1.15]
+
   return (
     <Canvas
-      dpr={[1, 1.51]}
+      dpr={dprSetting}
       shadows
       camera={{ position: CAMERA_BASE_POSITION, fov: CAMERA_FOV }}
       gl={{ 
@@ -321,9 +324,9 @@ export function HeroStage() {
         args={['#e3f2fd', '#f5f5f5', 1.0]} 
         position={[0, 10, 0]}
       /> */}
-      
+
       {/* Main window light - bright sunlight from left window */}
-      <ShadowLight />
+      <ShadowLight shadowMapSize={shadowMapSize} />
       
       {/* Secondary window light - softer from back window */}
       {/* <directionalLight 

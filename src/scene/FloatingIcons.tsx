@@ -3,7 +3,22 @@ import { useSpring, animated } from '@react-spring/three'
 import { RoundedBox, Text, MeshTransmissionMaterial, useTexture, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import emailjs from '@emailjs/browser'
-import { PROJECT_SECTIONS, PROJECT_SECTIONS_ARRAY, ProjectPanel1, ProjectPanel2, ProjectPanel3, ProjectPanel4, ProjectPanel5 } from './ProjectContent'
+import {
+  PROJECT_SECTIONS,
+  PROJECT_SECTIONS_ARRAY,
+  ProjectPanel1,
+  ProjectPanel2,
+  ProjectPanel3,
+  ProjectPanel4,
+  ProjectPanel5
+} from './ProjectContent'
+import {
+  ExperiencePanel1,
+  ExperiencePanel2,
+  ExperiencePanel3,
+  ExperiencePanel4,
+  ExperiencePanel5
+} from './ExperienceContent'
 
 // Base Z position for all UI elements - adjust to move everything forward/back
 // Lower values = closer to camera, Higher values = further from camera
@@ -44,10 +59,10 @@ function RoundedDisc({
     () => ({
       depth,
       bevelEnabled: true,
-      bevelSegments: 24,
+      bevelSegments: 8,
       bevelSize: bevel,
       bevelThickness: bevel,
-      curveSegments: 512,
+      curveSegments: 64,
       steps: 1
     }),
     [depth, bevel]
@@ -1366,12 +1381,12 @@ function ContactFormPanel({ onBack }: ContactFormPanelProps) {
           reflectivity={1}
           chromaticAberration={0.1}
           clearcoat={0.4}
-          resolution={1024}
+          resolution={512}
           clearcoatRoughness={0.05}
           iridescence={0.9}
           iridescenceIOR={0.1}
           iridescenceThicknessRange={[0, 140]}
-          samples={4}
+          samples={2}
         />
       </mesh>
       
@@ -1469,12 +1484,13 @@ function ContactFormPanel({ onBack }: ContactFormPanelProps) {
   )
 }
 
-// Small Menu Panel - appears when Projects panel is open
+// Small Menu Panel - appears when stacked panels (Projects/Experience) are open
 interface SmallMenuPanelProps {
   activePanelIndex: number
+  totalPanels?: number
 }
 
-function SmallMenuPanel({ activePanelIndex }: SmallMenuPanelProps) {
+function SmallMenuPanel({ activePanelIndex, totalPanels = 5 }: SmallMenuPanelProps) {
   // Small panel dimensions
   const panelWidth = 0.25
   const panelHeight = 0.05
@@ -1486,9 +1502,6 @@ function SmallMenuPanel({ activePanelIndex }: SmallMenuPanelProps) {
     to: { scale: 1, opacity: 1 },
     config: { tension: 280, friction: 26 }
   })
-  
-  // Total number of panels
-  const totalPanels = 5
   
   return (
     <animated.group scale={scale} rotation={[0, 0, Math.PI / 2]}>      {/* Small Menu Panel */}
@@ -1533,12 +1546,12 @@ function SmallMenuPanel({ activePanelIndex }: SmallMenuPanelProps) {
           reflectivity={1}
           chromaticAberration={0.1}
           clearcoat={0.4}
-          resolution={1024}
+          resolution={512}
           clearcoatRoughness={0.05}
           iridescence={0.9}
           iridescenceIOR={0.1}
           iridescenceThicknessRange={[0, 140]}
-          samples={4}
+          samples={2}
         />
       </mesh>
       
@@ -1649,9 +1662,10 @@ interface FloatingPanelProps {
   }
   hideBackButton?: boolean
   onActivePanelChange?: (index: number) => void
+  activePanelIndex?: number
 }
 
-function FloatingPanel({ label, onBack, content, hideBackButton = false, onActivePanelChange }: FloatingPanelProps) {
+function FloatingPanel({ label, onBack, content, hideBackButton = false, onActivePanelChange, activePanelIndex }: FloatingPanelProps) {
   const [backHovered, setBackHovered] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [scrollOffset, setScrollOffset] = useState(0) // Continuous scroll offset in 3D units
@@ -1669,13 +1683,22 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
   const totalProjectSections = PROJECT_SECTIONS_ARRAY.length
   
   const isProjectsPanel = label === 'Projects'
+  const isExperiencePanel = label === 'Experience'
+  const isStackedPanel = isProjectsPanel || isExperiencePanel
   
   // Scroll settings for iOS-style panel stacking
   const scrollSensitivity = 0.002 // How much 3D units per pixel of scroll
   const panelSpacing = 1.0 // Vertical spacing between panels
   const depthOffset = 0.15 // How much panels move back in Z when scrolling
-  const totalProjects = PROJECT_SECTIONS.length // 3 projects
-  const maxScrollOffset = (totalProjects - 1) * panelSpacing // Maximum scroll offset
+
+  const stackedPanels = isProjectsPanel
+    ? [ProjectPanel1, ProjectPanel2, ProjectPanel3, ProjectPanel4, ProjectPanel5]
+    : isExperiencePanel
+    ? [ExperiencePanel1, ExperiencePanel2, ExperiencePanel3, ExperiencePanel4, ExperiencePanel5]
+    : []
+
+  const totalPanels = stackedPanels.length
+  const maxScrollOffset = totalPanels > 0 ? (totalPanels - 1) * panelSpacing : 0 // Maximum scroll offset
   
   // Spring animation for smooth scrolling - Framer Motion-like config
   const { scrollY } = useSpring({
@@ -1688,14 +1711,14 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
   
   // Calculate active panel index based on scroll offset
   useEffect(() => {
-    if (!isProjectsPanel || !onActivePanelChange) return
+    if (!isStackedPanel || !onActivePanelChange) return
     
     // Calculate which panel is closest to the center based on target scroll offset
     // Panel 0 is at scroll 0, Panel 1 is at scroll 1.0, etc.
     const closestPanel = Math.round(targetScrollOffset / panelSpacing)
-    const activeIndex = Math.max(0, Math.min(totalProjects - 1, closestPanel))
+    const activeIndex = Math.max(0, Math.min(totalPanels - 1, closestPanel))
     onActivePanelChange(activeIndex)
-  }, [isProjectsPanel, onActivePanelChange, targetScrollOffset, panelSpacing, totalProjects])
+  }, [isStackedPanel, onActivePanelChange, targetScrollOffset, panelSpacing, totalPanels])
   
   const panelShape = useMemo(() => {
     const radius = 0.08
@@ -1743,7 +1766,7 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
     let nearestPanelIndex = 0
     let minDistance = Infinity
     
-    for (let i = 0; i < totalProjects; i++) {
+    for (let i = 0; i < totalPanels; i++) {
       const panelPosition = i * panelSpacing
       const distance = Math.abs(currentOffset - panelPosition)
       if (distance < minDistance) {
@@ -1755,11 +1778,11 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
     // Snap to the nearest panel position
     const snapPosition = nearestPanelIndex * panelSpacing
     return Math.max(0, Math.min(maxScrollOffset, snapPosition))
-  }, [totalProjects, panelSpacing, maxScrollOffset])
+  }, [totalPanels, panelSpacing, maxScrollOffset])
 
   // Momentum scrolling animation loop - runs continuously when panel is open
   useEffect(() => {
-    if (!isProjectsPanel) return
+    if (!isStackedPanel) return
 
     let animationFrameId: number
     const friction = 0.92 // Momentum decay factor (Framer Motion-like)
@@ -1817,10 +1840,10 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
         clearTimeout(snapTimeoutId)
       }
     }
-  }, [isProjectsPanel, maxScrollOffset, panelSpacing, totalProjects, snapToNearestPanel])
+  }, [isStackedPanel, maxScrollOffset, panelSpacing, totalPanels, snapToNearestPanel])
 
   useEffect(() => {
-    if (!isProjectsPanel) return
+    if (!isStackedPanel) return
 
     let snapTimeoutId: NodeJS.Timeout | null = null
 
@@ -1880,7 +1903,7 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
         clearTimeout(snapTimeoutId)
       }
     }
-  }, [isProjectsPanel, scrollSensitivity, maxScrollOffset, panelSpacing, totalProjects, snapToNearestPanel, isHovered])
+  }, [isStackedPanel, scrollSensitivity, maxScrollOffset, panelSpacing, totalPanels, snapToNearestPanel, isHovered])
 
   // Back button properties
   const backButtonRadius = 0.025
@@ -1907,8 +1930,8 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
   
   return (
     <animated.group scale={scale}>
-      {/* Main Panel - Floating Transparent Glass with Custom Rounded Shape (hidden for projects panel) */}
-      {!isProjectsPanel && (
+      {/* Main Panel - Floating Transparent Glass with Custom Rounded Shape (hidden for stacked panels) */}
+      {!isStackedPanel && (
         <mesh 
           position={panelPosition}
           castShadow
@@ -1932,18 +1955,18 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
             reflectivity={1}
             chromaticAberration={0.1}
             clearcoat={0.4}
-            resolution={1024}
+            resolution={512}
             clearcoatRoughness={0.05}
             iridescence={0.9}
             iridescenceIOR={0.1}
             iridescenceThicknessRange={[0, 140]}
-            samples={4}
+            samples={2}
           />
         </mesh>
       )}
       
-      {/* Back Button - Glassmorphic circular disc (hidden for home panel and projects panel) */}
-      {!hideBackButton && !isProjectsPanel && (
+      {/* Back Button - Glassmorphic circular disc (hidden for home panel and stacked panels) */}
+      {!hideBackButton && !isStackedPanel && (
         <animated.group
           position={backButtonPosition}
           scale={glassSpring.buttonScale}
@@ -2088,7 +2111,7 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
             </group>
           )}
           
-          {isProjectsPanel ? (
+          {isStackedPanel ? (
             <group 
               position={[panelPosition[0], panelPosition[1], panelPosition[2] + 0.02]}
             >
@@ -2102,12 +2125,15 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
                 <meshBasicMaterial visible={false} />
               </mesh>
               
-              {/* iOS-style stacked project panels */}
-              {[ProjectPanel1, ProjectPanel2, ProjectPanel3, ProjectPanel4, ProjectPanel5].map((ProjectComponent, index) => {
+              {/* iOS-style stacked panels (Projects or Experience) */}
+              {stackedPanels.map((PanelComponent, index) => {
                 // Calculate position based on scroll offset
                 const baseY = -index * panelSpacing
                 const transitionStart = index * panelSpacing
                 const transitionEnd = (index + 1) * panelSpacing
+                const shouldRenderPanel = !isStackedPanel || activePanelIndex === undefined
+                  ? true
+                  : Math.abs(index - activePanelIndex) <= 1
                 
                 // Animated Y position
                 const panelY = useSpring({
@@ -2154,79 +2180,83 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
                     position-z={panelY.z}
                     scale={panelY.scale}
                   >
-                    {/* Individual panel with glass effect */}
-                    <mesh 
-                      position={[0, 0, 0]}
-                      castShadow
-                      receiveShadow
-                    >
-                      <extrudeGeometry args={[
-                        panelShape,
-                        {
-                          depth: 0.01,
-                          bevelEnabled: false,
-                          curveSegments: 32
-                        }
-                      ]} />
-                      <MeshTransmissionMaterial
-                        color="white"
-                        metalness={0}
-                        roughness={0.01}
-                        ior={1.8}
-                        thickness={0}
-                        reflectivity={1}
-                        chromaticAberration={0.1}
-                        clearcoat={0.4}
-                        resolution={1024}
-                        clearcoatRoughness={0.05}
-                        iridescence={0.9}
-                        iridescenceIOR={0.1}
-                        iridescenceThicknessRange={[0, 140]}
-                        samples={4}
-                      />
-                    </mesh>
-                    
-                    {/* Back Button - Only on first panel (index 0) */}
-                    {index === 0 && (
-                      <animated.group
-                        position={backButtonPosition}
-                        scale={glassSpring.buttonScale}
-                        onClick={onBack}
-                        onPointerEnter={() => setBackHovered(true)}
-                        onPointerLeave={() => setBackHovered(false)}
-                      >
-                        <mesh castShadow receiveShadow rotation={[Math.PI / 2, 0, 0]}>
-                          <cylinderGeometry args={[backButtonRadius, backButtonRadius, panelDepth, 32]} />
-                          <animated.meshPhysicalMaterial
-                            color="#808080"
-                            metalness={0.1}
-                            roughness={0.2}
-                            opacity={glassSpring.buttonOpacity}
-                            transparent={true}
-                            transmission={0.3}
-                            thickness={0.5}
-                            emissive="#FFFFFF"
-                            emissiveIntensity={glassSpring.emissiveIntensity}
-                            clearcoat={1.0}
-                            clearcoatRoughness={0.1}
+                    {shouldRenderPanel && (
+                      <>
+                        {/* Individual panel with glass effect */}
+                        <mesh 
+                          position={[0, 0, 0]}
+                          castShadow
+                          receiveShadow
+                        >
+                          <extrudeGeometry args={[
+                            panelShape,
+                            {
+                              depth: 0.01,
+                              bevelEnabled: false,
+                              curveSegments: 32
+                            }
+                          ]} />
+                          <MeshTransmissionMaterial
+                            color="white"
+                            metalness={0}
+                            roughness={0.01}
+                            ior={1.8}
+                            thickness={0}
+                            reflectivity={1}
+                            chromaticAberration={0.1}
+                            clearcoat={0.4}
+                            resolution={256}
+                            clearcoatRoughness={0.05}
+                            iridescence={0.9}
+                            iridescenceIOR={0.1}
+                            iridescenceThicknessRange={[0, 140]}
+                            samples={2}
                           />
                         </mesh>
                         
-                        {/* Back Arrow - Simple left arrow */}
-                        <Text
-                          position={[0, 0, panelDepth / 2 + 0.005]}
-                          fontSize={0.025}
-                          color="#FFFFFF"
-                          anchorX="center"
-                          anchorY="middle"
-                        >
-                          ←
-                        </Text>
-                      </animated.group>
+                        {/* Back Button - Only on first panel (index 0) */}
+                        {index === 0 && (
+                          <animated.group
+                            position={backButtonPosition}
+                            scale={glassSpring.buttonScale}
+                            onClick={onBack}
+                            onPointerEnter={() => setBackHovered(true)}
+                            onPointerLeave={() => setBackHovered(false)}
+                          >
+                            <mesh castShadow receiveShadow rotation={[Math.PI / 2, 0, 0]}>
+                              <cylinderGeometry args={[backButtonRadius, backButtonRadius, panelDepth, 32]} />
+                              <animated.meshPhysicalMaterial
+                                color="#808080"
+                                metalness={0.1}
+                                roughness={0.2}
+                                opacity={glassSpring.buttonOpacity}
+                                transparent={true}
+                                transmission={0.3}
+                                thickness={0.5}
+                                emissive="#FFFFFF"
+                                emissiveIntensity={glassSpring.emissiveIntensity}
+                                clearcoat={1.0}
+                                clearcoatRoughness={0.1}
+                              />
+                            </mesh>
+                            
+                            {/* Back Arrow - Simple left arrow */}
+                            <Text
+                              position={[0, 0, panelDepth / 2 + 0.005]}
+                              fontSize={0.025}
+                              color="#FFFFFF"
+                              anchorX="center"
+                              anchorY="middle"
+                            >
+                              ←
+                            </Text>
+                          </animated.group>
+                        )}
+                        
+                        {/* Section content inside panel */}
+                        <PanelComponent position={[0, 0, 0.025]} />
+                      </>
                     )}
-                    
-                    {/* Project content inside panel */}
-                    <ProjectComponent position={[0, 0, 0.025]} />
                   </animated.group>
                 )
               })}
@@ -2430,9 +2460,12 @@ export function FloatingIcons() {
               onBack={handleBack}
               content={panelState.content}
               onActivePanelChange={setActivePanelIndex}
+              activePanelIndex={activePanelIndex}
             />
-            {/* Small Menu Panel - only show when Projects panel is open */}
-            {panelState.label === 'Projects' && <SmallMenuPanel activePanelIndex={activePanelIndex} />}
+            {/* Small Menu Panel - show when stacked panels (Projects/Experience) are open */}
+            {(panelState.label === 'Projects' || panelState.label === 'Experience') && (
+              <SmallMenuPanel activePanelIndex={activePanelIndex} />
+            )}
           </>
         )
       )}

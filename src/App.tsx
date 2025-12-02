@@ -19,10 +19,9 @@ export default function App() {
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <HeroStage />
+      <HeroStage isMobile={isMobile} />
       <Overlay isMobile={isMobile} />
     </div>
   )
 }
-
 
