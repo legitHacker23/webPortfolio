@@ -2472,7 +2472,12 @@ export function FloatingIcons() {
       
       {/* Home Toggle Button - always visible */}
       <HomeToggleButton
-        position={panelState.isOpen && panelState.label === 'Projects' ? [-0.155, 0.175, BASE_Z_POSITION] : [0.55, -0.2, BASE_Z_POSITION]}
+        position={
+          panelState.isOpen &&
+          (panelState.label === 'Projects' || panelState.label === 'Experience')
+            ? [-0.155, 0.175, BASE_Z_POSITION]
+            : [0.55, -0.2, BASE_Z_POSITION]
+        }
         showDots={showingHome}
         onClick={handleToggleHome}
       />    </group>
