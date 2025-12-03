@@ -1,6 +1,7 @@
 // src/scene/ProjectContent.tsx
-import React, { Suspense } from 'react'
+import React, { Suspense, useState } from 'react'
 import { Text, useTexture, MeshTransmissionMaterial } from '@react-three/drei'
+import { useSpring, animated } from '@react-spring/three'
 import * as THREE from 'three'
 
 // Project data
@@ -17,7 +18,7 @@ export const PROJECT_SECTIONS = [
   },
   {
     title: 'Smart Mirror',
-    description: 'Designed a voice-activated smart mirror featuring a modern, responsive UI that uses speech recognition and Gemini 2.0 Flash to answer real-time questions about weather, calendar events, and stock prices. Tech Stack: React, Flask',
+    description: 'Designed a voice-activated smart mirror featuring a modern, responsive UI that uses speech recognition and Gemini 2.0 Flash to answer real-time questions about weather, calendar events, and stock prices.',
     image: '/assets/magicMirror.png'
   },
   {
@@ -27,7 +28,7 @@ export const PROJECT_SECTIONS = [
   },
   {
     title: '3D Portfolio Website',
-    description: 'Built an immersive 3D portfolio website with interactive floating panels, smooth animations, and a virtual environment. Tech Stack: React, TypeScript, Three.js, Vite',
+    description: 'Built an immersive 3D portfolio website with interactive floating panels, smooth animations, and a virtual environment.',
     image: '/assets/portfolio.png'
   }
 ]
@@ -177,6 +178,57 @@ function ProjectScreenshot({ imagePath, position, width = 1, height = 0.3 }: {
   )
 }
 
+// Hoverable Pill Shape Component with animation
+interface HoverablePillShapeProps {
+  position: [number, number, number]
+  geometry: THREE.ExtrudeGeometry
+  material: THREE.MeshPhysicalMaterial
+  label: string
+  pillWidth: number
+}
+
+function HoverablePillShape({ position, geometry, material, label, pillWidth }: HoverablePillShapeProps) {
+  const [hovered, setHovered] = useState(false)
+  
+  // Animate scale and z-position on hover
+  const { scale, positionZ } = useSpring({
+    scale: hovered ? 1.15 : 1.0,
+    positionZ: hovered ? position[2] + 0.005 : position[2],
+    config: { tension: 300, friction: 20 }
+  })
+  
+  return (
+    <animated.group 
+      position-x={position[0]}
+      position-y={position[1]}
+      position-z={positionZ}
+      scale={scale}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+    >
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={geometry}
+      >
+        <primitive object={material} attach="material" />
+      </mesh>
+      {/* Text label inside shape */}
+      <Text
+        position={[0, 0, 0.0125]}
+        fontSize={0.016}
+        color="#FFFFFF"
+        anchorX="center"
+        anchorY="middle"
+        maxWidth={pillWidth * 0.9}
+        sdfGlyphSize={64}
+      >
+        {label}
+      </Text>
+    </animated.group>
+  )
+}
+
 // Unified Project Panel Component
 interface ProjectPanelProps {
   position: [number, number, number]
@@ -187,6 +239,8 @@ export function ProjectPanel({ position, sectionIndex }: ProjectPanelProps) {
   const section = PROJECT_SECTIONS[sectionIndex]
   const isRiceProject = sectionIndex === 0 // Rice University AI Course Catalog
   const isPostureProject = sectionIndex === 1 // Posture Detection Application
+  const isSmartMirrorProject = sectionIndex === 2
+  const isPortfolioProject = sectionIndex === 4 // 3D Portfolio Website
   const pillWidth = 0.08 // Width of the pill shape
   const pillHeight = 0.035 // Height of the pill shape
   const pillRadius = 0.017 // Rounded corner radius
@@ -194,6 +248,49 @@ export function ProjectPanel({ position, sectionIndex }: ProjectPanelProps) {
   const shapeSpacing = 0.1 // Spacing between shapes
   const riceTechLabels = ['React', 'Javascript', 'React', 'Flask', 'Selenium', 'FAISS']
   const postureTechLabels = ['Swift', 'Python', 'Pandas', 'Scikitlearn', 'CoreML', 'Vision']
+  const smartMirrorTechLabels = ['Javascript', 'Python', 'React', 'Flask', 'REST']
+  const portfolioTechLabels = ['React', 'TypeScript', 'Threejs', 'Vite']
+  
+  // Memoized shared material instance - created once and reused across all shapes
+  // Using MeshPhysicalMaterial for better performance (similar look to MeshTransmissionMaterial)
+  const sharedMaterial = React.useMemo(() => {
+    return new THREE.MeshPhysicalMaterial({
+      color: 'white',
+      metalness: 0.1,
+      roughness: 0.2,
+      opacity: 0.5,
+      transparent: true,
+      emissive: '#FFFFFF',
+      emissiveIntensity: 0.1,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.1,
+    })
+  }, [])
+  
+  // Memoized pill shape geometry - created once and reused across all shapes
+  const pillGeometry = React.useMemo(() => {
+    const width = pillWidth
+    const height = pillHeight
+    const radius = pillRadius
+    
+    const shape = new THREE.Shape()
+    shape.moveTo(-width/2 + radius, -height/2)
+    shape.lineTo(width/2 - radius, -height/2)
+    shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
+    shape.lineTo(width/2, height/2 - radius)
+    shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
+    shape.lineTo(-width/2 + radius, height/2)
+    shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
+    shape.lineTo(-width/2, -height/2 + radius)
+    shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
+    shape.closePath()
+    
+    return new THREE.ExtrudeGeometry(shape, {
+      depth: shapeDepth,
+      bevelEnabled: false,
+      curveSegments: 32
+    })
+  }, [pillWidth, pillHeight, pillRadius, shapeDepth])
   
   return (
     <group position={position}>
@@ -213,81 +310,49 @@ export function ProjectPanel({ position, sectionIndex }: ProjectPanelProps) {
         anchorX="left"
         anchorY="top"
         fontWeight="bold"
-        maxWidth={0.35}
+        maxWidth={1}
       >
         {section.title}
       </Text>
 
-      {/* 6 Pill Shapes - For Rice and Posture projects, positioned to the right of title and above description */}
-      {(isRiceProject || isPostureProject) && (
-        <group position={[0.15, -0.2, 0.02]}>
-          {Array.from({ length: 6 }).map((_, index) => {
-            const xPosition = (index - 2.5) * shapeSpacing // Center 6 shapes with spacing
-            const techLabels = isRiceProject ? riceTechLabels : postureTechLabels
-            return (
-              <group key={index} position={[xPosition, 0, 0]}>
-                <mesh
-                  castShadow
-                  receiveShadow
-                >
-                  <extrudeGeometry args={[
-                    (() => {
-                      const width = pillWidth
-                      const height = pillHeight
-                      const radius = pillRadius
-                      
-                      const shape = new THREE.Shape()
-                      shape.moveTo(-width/2 + radius, -height/2)
-                      shape.lineTo(width/2 - radius, -height/2)
-                      shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
-                      shape.lineTo(width/2, height/2 - radius)
-                      shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
-                      shape.lineTo(-width/2 + radius, height/2)
-                      shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
-                      shape.lineTo(-width/2, -height/2 + radius)
-                      shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
-                      shape.closePath()
-                      
-                      return shape
-                    })(),
-                    {
-                      depth: shapeDepth,
-                      bevelEnabled: false,
-                      curveSegments: 32
-                    }
-                  ]} />
-                  <MeshTransmissionMaterial
-                    color="white"
-                    metalness={0}
-                    roughness={0.01}
-                    ior={1.8}
-                    thickness={0}
-                    reflectivity={1}
-                    chromaticAberration={0.1}
-                    clearcoat={0.4}
-                    resolution={512}
-                    clearcoatRoughness={0.05}
-                    iridescence={0.9}
-                    iridescenceIOR={0.1}
-                    iridescenceThicknessRange={[0, 140]}
-                    samples={2}
-                  />
-                </mesh>
-                {/* Text label inside shape */}
-                <Text
-                  position={[0, 0, 0.0125]}
-                  fontSize={0.016}
-                  color="#FFFFFF"
-                  anchorX="center"
-                  anchorY="middle"
-                  maxWidth={pillWidth * 0.9}
-                  sdfGlyphSize={64}
-                >
-                  {techLabels[index]}
-                </Text>
-              </group>
-            )
-          })}
+      {/* Pill Shapes - For Rice, Posture, Smart Mirror, and Portfolio projects, positioned to the right of title and above description */}
+      {(isRiceProject || isPostureProject || isSmartMirrorProject || isPortfolioProject) && (
+        <group position={
+          isRiceProject ? [-0.21, -0.2225, 0.02] :
+          isPostureProject ? [-0.21, -0.2225, 0.02] :
+          isSmartMirrorProject ? [-0.26, -0.2225, 0.02] :
+          [-0.31, -0.2225, 0.02]  // Portfolio default
+        }>
+          {(() => {
+            let techLabels: string[]
+            let numShapes: number
+            if (isRiceProject) {
+              techLabels = riceTechLabels
+              numShapes = 6
+            } else if (isPostureProject) {
+              techLabels = postureTechLabels
+              numShapes = 6
+            } else if (isSmartMirrorProject) {
+              techLabels = smartMirrorTechLabels
+              numShapes = 5
+            } else {
+              techLabels = portfolioTechLabels
+              numShapes = 4
+            }
+            return Array.from({ length: numShapes }).map((_, index) => {
+              const xPosition = (index - (numShapes - 1) / 2) * shapeSpacing // Center shapes with spacing
+              return (
+                <HoverablePillShape
+                  key={index}
+                  position={[xPosition, 0, 0]}
+                  geometry={pillGeometry}
+                  material={sharedMaterial}
+                  label={techLabels[index]}
+                  pillWidth={pillWidth}
+                />
+              )
+            })
+          })()}
         </group>
       )}
       
