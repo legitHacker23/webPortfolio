@@ -16,8 +16,7 @@ import {
   ExperiencePanel1,
   ExperiencePanel2,
   ExperiencePanel3,
-  ExperiencePanel4,
-  ExperiencePanel5
+  ExperiencePanel4
 } from './ExperienceContent'
 
 // Base Z position for all UI elements - adjust to move everything forward/back
@@ -1694,7 +1693,7 @@ function FloatingPanel({ label, onBack, content, hideBackButton = false, onActiv
   const stackedPanels = isProjectsPanel
     ? [ProjectPanel1, ProjectPanel2, ProjectPanel3, ProjectPanel4, ProjectPanel5]
     : isExperiencePanel
-    ? [ExperiencePanel1, ExperiencePanel2, ExperiencePanel3, ExperiencePanel4, ExperiencePanel5]
+    ? [ExperiencePanel1, ExperiencePanel2, ExperiencePanel3, ExperiencePanel4]
     : []
 
   const totalPanels = stackedPanels.length
@@ -2464,7 +2463,10 @@ export function FloatingIcons() {
             />
             {/* Small Menu Panel - show when stacked panels (Projects/Experience) are open */}
             {(panelState.label === 'Projects' || panelState.label === 'Experience') && (
-              <SmallMenuPanel activePanelIndex={activePanelIndex} />
+              <SmallMenuPanel 
+                activePanelIndex={activePanelIndex} 
+                totalPanels={panelState.label === 'Experience' ? 4 : 5}
+              />
             )}
           </>
         )

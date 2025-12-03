@@ -1,6 +1,6 @@
 // src/scene/ProjectContent.tsx
 import React, { Suspense } from 'react'
-import { Text, useTexture } from '@react-three/drei'
+import { Text, useTexture, MeshTransmissionMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 
 // Project data
@@ -185,6 +185,15 @@ interface ProjectPanelProps {
 
 export function ProjectPanel({ position, sectionIndex }: ProjectPanelProps) {
   const section = PROJECT_SECTIONS[sectionIndex]
+  const isRiceProject = sectionIndex === 0 // Rice University AI Course Catalog
+  const isPostureProject = sectionIndex === 1 // Posture Detection Application
+  const pillWidth = 0.08 // Width of the pill shape
+  const pillHeight = 0.035 // Height of the pill shape
+  const pillRadius = 0.017 // Rounded corner radius
+  const shapeDepth = 0.01
+  const shapeSpacing = 0.1 // Spacing between shapes
+  const riceTechLabels = ['React', 'Javascript', 'React', 'Flask', 'Selenium', 'FAISS']
+  const postureTechLabels = ['Swift', 'Python', 'Pandas', 'Scikitlearn', 'CoreML', 'Vision']
   
   return (
     <group position={position}>
@@ -208,6 +217,79 @@ export function ProjectPanel({ position, sectionIndex }: ProjectPanelProps) {
       >
         {section.title}
       </Text>
+
+      {/* 6 Pill Shapes - For Rice and Posture projects, positioned to the right of title and above description */}
+      {(isRiceProject || isPostureProject) && (
+        <group position={[0.15, -0.2, 0.02]}>
+          {Array.from({ length: 6 }).map((_, index) => {
+            const xPosition = (index - 2.5) * shapeSpacing // Center 6 shapes with spacing
+            const techLabels = isRiceProject ? riceTechLabels : postureTechLabels
+            return (
+              <group key={index} position={[xPosition, 0, 0]}>
+                <mesh
+                  castShadow
+                  receiveShadow
+                >
+                  <extrudeGeometry args={[
+                    (() => {
+                      const width = pillWidth
+                      const height = pillHeight
+                      const radius = pillRadius
+                      
+                      const shape = new THREE.Shape()
+                      shape.moveTo(-width/2 + radius, -height/2)
+                      shape.lineTo(width/2 - radius, -height/2)
+                      shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
+                      shape.lineTo(width/2, height/2 - radius)
+                      shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
+                      shape.lineTo(-width/2 + radius, height/2)
+                      shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
+                      shape.lineTo(-width/2, -height/2 + radius)
+                      shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
+                      shape.closePath()
+                      
+                      return shape
+                    })(),
+                    {
+                      depth: shapeDepth,
+                      bevelEnabled: false,
+                      curveSegments: 32
+                    }
+                  ]} />
+                  <MeshTransmissionMaterial
+                    color="white"
+                    metalness={0}
+                    roughness={0.01}
+                    ior={1.8}
+                    thickness={0}
+                    reflectivity={1}
+                    chromaticAberration={0.1}
+                    clearcoat={0.4}
+                    resolution={512}
+                    clearcoatRoughness={0.05}
+                    iridescence={0.9}
+                    iridescenceIOR={0.1}
+                    iridescenceThicknessRange={[0, 140]}
+                    samples={2}
+                  />
+                </mesh>
+                {/* Text label inside shape */}
+                <Text
+                  position={[0, 0, 0.0125]}
+                  fontSize={0.016}
+                  color="#FFFFFF"
+                  anchorX="center"
+                  anchorY="middle"
+                  maxWidth={pillWidth * 0.9}
+                  sdfGlyphSize={64}
+                >
+                  {techLabels[index]}
+                </Text>
+              </group>
+            )
+          })}
+        </group>
+      )}
       
       <Text
         position={[-0.5, -0.25, 0.02]}

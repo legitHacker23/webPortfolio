@@ -7,34 +7,36 @@ import { useTexture } from '@react-three/drei'
 // Experience data
 export const EXPERIENCE_SECTIONS = [
   {
-    title: 'MIT CSAIL Research',
+    role: 'AI/ML Full-Stack Software Engineer',
+    company: 'MIT & Harvard',
+    date: 'May 2025 - Present',
     description:
-      'Worked on cutting-edge AI research at MIT CSAIL, collaborating with graduate students and faculty on large-scale machine learning systems.',
+      'As an undergraduate researcher with the MantisAI group, I contributed to the MantisAI group to support their mission of building intelligent human-centered systems that enhance annalysius, understanding, and decision-making. My work focused on devloping interactive software tools, refining data workflows, and contributing to AI-driven interfaces designed to help teams manage complex research tasks more efficientlyt.',
     image: '/assets/mitcsail.png'
   },
   {
-    title: 'Harvard Innovation Lab',
+    role: 'Software Engineer Intern',
+    company: 'SouthHampton Medical Imaging',
+    date: 'May 2025 - August 2025',
     description:
-      'Contributed to data-driven product experimentation and rapid prototyping in a fast-paced innovation environment.',
-    image: undefined
+      'Designed, built, and shipped a modern, responsive website for South Hampton Medical Imaging.',
+    image: '/assets/southHampton.png'
   },
   {
-    title: 'Rice University AI Initiatives',
+    role: 'Software Engineer Intern',
+    company: 'Texchange Unbrokered',
+    date: 'August 2025 - October 2025',
     description:
-      'Supported AI-driven platforms and tooling for students and faculty, focusing on search, retrieval, and analytics.',
-    image: undefined
+      'Worked with the product team to design and improve core features as well as key UI workflows across TexChange\'s B2B SaaS web and mobile application.',
+    image: '/assets/texchange.png'
   },
   {
-    title: 'Industry Experience',
+    role: 'SQL & Python Trainee',
+    company: 'Global Career Accelerator',
+    date: 'January 2025 - May 2025',
     description:
-      'Applied data science, ML, and full‑stack skills to real-world problems, from analytics dashboards to intelligent automation.',
-    image: undefined
-  },
-  {
-    title: 'Teaching & Mentorship',
-    description:
-      'Mentored students and peers in data science, machine learning, and software engineering best practices.',
-    image: undefined
+      'Analyzed real-world datasets with Python and SQL while collaborating with a global team to deliver clear, actionable insights.',
+    image: '/assets/globalcareeraccelerator.png'
   }
 ]
 
@@ -56,7 +58,7 @@ function ExperienceScreenshotInternal({
       uniforms: {
         uTexture: { value: texture },
         uFadeStart: { value: 1 },
-        uFadeEnd: { value: 0.0 },
+        uFadeEnd: { value: 0.3 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -167,25 +169,53 @@ export function ExperiencePanel({ position, sectionIndex }: ExperiencePanelProps
         />
       )}
 
+      {/* Role - Top */}
       <Text
-        position={[-0.5, -0.15, 0.02]}
+        position={[-0.5, -0.05, 0.02]}
         fontSize={0.035}
         color="#FFFFFF"
         anchorX="left"
         anchorY="top"
         fontWeight="bold"
-        maxWidth={0.35}
+        maxWidth={0.8}
       >
-        {section.title}
+        {section.role}
       </Text>
 
+      {/* Company - Second */}
       <Text
-        position={[-0.5, -0.25, 0.02]}
-        fontSize={0.024}
+        position={[-0.5, -0.1, 0.02]}
+        fontSize={0.028}
         color="#FFFFFF"
         anchorX="left"
         anchorY="top"
         maxWidth={0.8}
+      >
+        {section.company}
+      </Text>
+
+      {/* Date - Third */}
+      {section.date && (
+        <Text
+          position={[-0.5, -0.15, 0.02]}
+          fontSize={0.022}
+          color="#CCCCCC"
+          anchorX="left"
+          anchorY="top"
+          maxWidth={0.8}
+        >
+          {section.date}
+        </Text>
+      )}
+
+      {/* Description - Bottom */}
+      <Text
+        position={[-0.5, -0.22, 0.02]}
+        fontSize={0.024}
+        color="#FFFFFF"
+        anchorX="left"
+        anchorY="top"
+        maxWidth={1}
         lineHeight={1.3}
         textAlign="left"
       >
@@ -223,10 +253,5 @@ export function ExperiencePanel4({ position }: ExperiencePanel4Props) {
   return <ExperiencePanel position={position} sectionIndex={3} />
 }
 
-interface ExperiencePanel5Props {
-  position: [number, number, number]
-}
-export function ExperiencePanel5({ position }: ExperiencePanel5Props) {
-  return <ExperiencePanel position={position} sectionIndex={4} />
-}
+
 
