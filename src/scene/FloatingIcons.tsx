@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, Suspense, useRef, useCallback } from 'react'
 import { useSpring, animated } from '@react-spring/three'
-import { RoundedBox, Text, MeshTransmissionMaterial, useTexture, useGLTF } from '@react-three/drei'
+import { RoundedBox, Text, MeshTransmissionMaterial, useTexture, useGLTF, Html } from '@react-three/drei'
 import * as THREE from 'three'
 import emailjs from '@emailjs/browser'
 import {
@@ -1039,7 +1039,6 @@ interface ContactFormPanelProps {
 
 function ContactFormPanel({ onBack }: ContactFormPanelProps) {
   const [backHovered, setBackHovered] = useState(false)
-  const [activeField, setActiveField] = useState<'name' | 'email' | 'message' | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -1074,37 +1073,34 @@ function ContactFormPanel({ onBack }: ContactFormPanelProps) {
     config: { tension: 300, friction: 20 }
   })
   
-  // Handle keyboard input when a field is active
-  useEffect(() => {
-    if (!activeField) return
+  // Memoize panel geometry - created once and reused
+  const panelGeometry = useMemo(() => {
+    const width = panelWidth
+    const height = panelHeight
+    const radius = 0.08
     
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Backspace') {
-        setFormData(prev => ({
-          ...prev,
-          [activeField]: prev[activeField].slice(0, -1)
-        }))
-      } else if (e.key === 'Enter' && activeField !== 'message') {
-        // Move to next field or submit
-        if (activeField === 'name') {
-          setActiveField('email')
-        } else if (activeField === 'email') {
-          setActiveField('message')
-        }
-      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-        // Regular character input
-        setFormData(prev => ({
-          ...prev,
-          [activeField]: prev[activeField] + e.key
-        }))
-      }
-    }
+    const shape = new THREE.Shape()
+    shape.moveTo(-width/2 + radius, -height/2)
+    shape.lineTo(width/2 - radius, -height/2)
+    shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
+    shape.lineTo(width/2, height/2 - radius)
+    shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
+    shape.lineTo(-width/2 + radius, height/2)
+    shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
+    shape.lineTo(-width/2, -height/2 + radius)
+    shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
+    shape.closePath()
     
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeField])
+    return new THREE.ExtrudeGeometry(shape, {
+      depth: 0.01,
+      bevelEnabled: false,
+      curveSegments: 32
+    })
+  }, [panelWidth, panelHeight])
   
-  const handleSubmit = async () => {
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (!formData.name || !formData.email || !formData.message) return
     if (isSubmitting) return
     
@@ -1112,225 +1108,34 @@ function ContactFormPanel({ onBack }: ContactFormPanelProps) {
     
     try {
       await emailjs.send(
-        'service_znehpa8',      // Replace with your EmailJS service ID
-        'template_eyn1wkg',     // Replace with your EmailJS template ID
+        'service_znehpa8',
+        'template_eyn1wkg',
         {
           name: formData.name,
           email: formData.email,
           message: formData.message,
-          to_email: 'nbmendoza1432@gmail.com', // Replace with your email address
+          to_email: 'nbmendoza1432@gmail.com',
         },
-        'jleOZNLVNkX7SjI01'       // Replace with your EmailJS public key
+        'jleOZNLVNkX7SjI01'
       )
       
       // Success - reset form
       setFormData({ name: '', email: '', message: '' })
-      setActiveField(null)
+      alert('Message sent successfully!')
     } catch (error) {
-      // Error handling - you can add user feedback here if needed
       console.error('Failed to send email:', error)
+      alert('Failed to send message. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
   }
   
-  // Input field component
-  const InputField = ({ 
-    label, 
-    value, 
-    field, 
-    position, 
-    width = 0.5, 
-    height = 0.06,
-    multiline = false 
-  }: { 
-    label: string
-    value: string
-    field: 'name' | 'email' | 'message'
-    position: [number, number, number]
-    width?: number
-    height?: number
-    multiline?: boolean
-  }) => {
-    const isActive = activeField === field
-    const [hovered, setHovered] = useState(false)
-    
-    const fieldSpring = useSpring({
-      opacity: isActive ? 0.6 : hovered ? 0.55 : 0.5,
-      scale: isActive ? 1.02 : hovered ? 1.01 : 1,
-      config: { tension: 300, friction: 20 }
-    })
-    
-    return (
-      <group position={position}>
-        {/* Glassmorphic input field background */}
-        <animated.mesh 
-          position={[0, 0, 0.01]}
-          scale={fieldSpring.scale}
-          castShadow
-          receiveShadow
-          onClick={(e) => {
-            e.stopPropagation()
-            setActiveField(field)
-          }}
-          onPointerEnter={() => setHovered(true)}
-          onPointerLeave={() => setHovered(false)}
-        >
-          <extrudeGeometry args={[
-            (() => {
-              const radius = 0.02
-              const shape = new THREE.Shape()
-              shape.moveTo(-width/2 + radius, -height/2)
-              shape.lineTo(width/2 - radius, -height/2)
-              shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
-              shape.lineTo(width/2, height/2 - radius)
-              shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
-              shape.lineTo(-width/2 + radius, height/2)
-              shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
-              shape.lineTo(-width/2, -height/2 + radius)
-              shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
-              shape.closePath()
-              return shape
-            })(),
-            {
-              depth: 0.01,
-              bevelEnabled: false,
-              curveSegments: 32
-            }
-          ]} />
-          <animated.meshPhysicalMaterial
-            color="#000000"
-            metalness={0.0}
-            roughness={0.5}
-            opacity={fieldSpring.opacity}
-            transparent={true}
-            transmission={0}
-            thickness={2.0}
-            clearcoat={1.0}
-            clearcoatRoughness={0.6}
-            ior={2}
-            attenuationDistance={0.5}
-            attenuationColor="#FFFFFF"
-            depthWrite={false}
-          />
-        </animated.mesh>
-        
-        {/* Label */}
-        <Text
-          position={[-width/2 + 0.01, height/2 + 0.03, 0.015]}
-          fontSize={0.022}
-          color="#FFFFFF"
-          anchorX="left"
-          anchorY="bottom"
-        >
-          {label}
-        </Text>
-        
-        {/* Input value text */}
-        <Text
-          position={[-width/2 + 0.02, 0, 0.015]}
-          fontSize={0.025}
-          color="#FFFFFF"
-          anchorX="left"
-          anchorY="middle"
-          maxWidth={width - 0.04}
-        >
-          {value}
-        </Text>
-        
-        {/* Cursor when active - positioned after text */}
-        {isActive && (
-          <mesh position={[-width/2 + 0.02 + (value.length * 0.015), 0, 0.015]}>
-            <boxGeometry args={[0.002, 0.03, 0.001]} />
-            <meshBasicMaterial color="#FFFFFF" />
-          </mesh>
-        )}
-      </group>
-    )
-  }
-  
-  // Send button component
-  const SendButton = ({ position }: { position: [number, number, number] }) => {
-    const [hovered, setHovered] = useState(false)
-    const [clicked, setClicked] = useState(false)
-    
-    const buttonSpring = useSpring({
-      buttonOpacity: hovered ? 0.4 : 0.5,
-      buttonScale: clicked ? 0.95 : hovered ? 1.05 : 1,
-      emissiveIntensity: hovered ? 0.3 : 0,
-      config: { tension: 300, friction: 20 }
-    })
-    
-    const buttonWidth = 0.3
-    const buttonHeight = 0.06
-    
-    return (
-      <animated.group
-        position={position}
-        scale={buttonSpring.buttonScale}
-        onClick={(e) => {
-          e.stopPropagation()
-          setClicked(true)
-          setTimeout(() => {
-            setClicked(false)
-            handleSubmit()
-          }, 150)
-        }}
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
-      >
-        <mesh castShadow receiveShadow>
-          <extrudeGeometry args={[
-            (() => {
-              const radius = 0.02
-              const shape = new THREE.Shape()
-              shape.moveTo(-buttonWidth/2 + radius, -buttonHeight/2)
-              shape.lineTo(buttonWidth/2 - radius, -buttonHeight/2)
-              shape.quadraticCurveTo(buttonWidth/2, -buttonHeight/2, buttonWidth/2, -buttonHeight/2 + radius)
-              shape.lineTo(buttonWidth/2, buttonHeight/2 - radius)
-              shape.quadraticCurveTo(buttonWidth/2, buttonHeight/2, buttonWidth/2 - radius, buttonHeight/2)
-              shape.lineTo(-buttonWidth/2 + radius, buttonHeight/2)
-              shape.quadraticCurveTo(-buttonWidth/2, buttonHeight/2, -buttonWidth/2, buttonHeight/2 - radius)
-              shape.lineTo(-buttonWidth/2, -buttonHeight/2 + radius)
-              shape.quadraticCurveTo(-buttonWidth/2, -buttonHeight/2, -buttonWidth/2 + radius, -buttonHeight/2)
-              shape.closePath()
-              return shape
-            })(),
-            {
-              depth: 0.01,
-              bevelEnabled: false,
-              curveSegments: 32
-            }
-          ]} />
-          <animated.meshPhysicalMaterial
-            color="#4A90E2"
-            metalness={0.0}
-            roughness={0}
-            opacity={buttonSpring.buttonOpacity}
-            transparent={true}
-            transmission={0}
-            thickness={3.0}
-            clearcoat={1.0}
-            clearcoatRoughness={0}
-            ior={1}
-            emissive="#4A90E2"
-            emissiveIntensity={buttonSpring.emissiveIntensity}
-            depthWrite={false}
-          />
-        </mesh>
-        
-        <Text
-          position={[0, 0, 0.015]}
-          fontSize={0.025}
-          color="#FFFFFF"
-          anchorX="center"
-          anchorY="middle"
-          fontWeight="bold"
-        >
-          Send
-        </Text>
-      </animated.group>
-    )
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
   }
   
   return (
@@ -1342,35 +1147,9 @@ function ContactFormPanel({ onBack }: ContactFormPanelProps) {
         receiveShadow
         onClick={(e) => {
           e.stopPropagation()
-          setActiveField(null)
         }}
+        geometry={panelGeometry}
       >
-        <extrudeGeometry args={[
-          (() => {
-            const width = panelWidth
-            const height = panelHeight
-            const radius = 0.08
-            
-            const shape = new THREE.Shape()
-            shape.moveTo(-width/2 + radius, -height/2)
-            shape.lineTo(width/2 - radius, -height/2)
-            shape.quadraticCurveTo(width/2, -height/2, width/2, -height/2 + radius)
-            shape.lineTo(width/2, height/2 - radius)
-            shape.quadraticCurveTo(width/2, height/2, width/2 - radius, height/2)
-            shape.lineTo(-width/2 + radius, height/2)
-            shape.quadraticCurveTo(-width/2, height/2, -width/2, height/2 - radius)
-            shape.lineTo(-width/2, -height/2 + radius)
-            shape.quadraticCurveTo(-width/2, -height/2, -width/2 + radius, -height/2)
-            shape.closePath()
-            
-            return shape
-          })(),
-          {
-            depth: 0.01,
-            bevelEnabled: false,
-            curveSegments: 32
-          }
-        ]} />
         <MeshTransmissionMaterial
           color="white"
           metalness={0}
@@ -1437,48 +1216,207 @@ function ContactFormPanel({ onBack }: ContactFormPanelProps) {
         Contact Me
       </Text>
       
-      {/* Email Address - Right Side */}
-      <Text
-        position={[panelPosition[0] + 0.1, panelPosition[1] + 0.2, panelPosition[2] + 0.02]}
-        fontSize={0.025}
-        color="#FFFFFF"
-        anchorX="left"
-        anchorY="middle"
+      {/* HTML Form Overlay */}
+      <Html
+        position={[panelPosition[0] + 0.5, panelPosition[1], panelPosition[2] + 0.01]}
+        transform
+        occlude
+        distanceFactor={1}
+        style={{
+          width: '520px',
+          pointerEvents: 'auto',
+          transform: 'translateX(-50%) scale(0.67)',
+          transformOrigin: 'center center',
+          imageRendering: 'crisp-edges',
+          WebkitFontSmoothing: 'antialiased',
+        }}
+        zIndexRange={[50, 0]}
+        center
       >
-        Email: nbmendoza1432@gmail.com
-      </Text>
-      
-      {/* Input Fields */}
-      <InputField
-        label="Name"
-        value={formData.name}
-        field="name"
-        position={[panelPosition[0] - 0.25, panelPosition[1] + 0.2, panelPosition[2] + 0.02]}
-        width={0.5}
-        height={0.06}
-      />
-      
-      <InputField
-        label="Email"
-        value={formData.email}
-        field="email"
-        position={[panelPosition[0] - 0.25, panelPosition[1] + 0.05, panelPosition[2] + 0.02]}
-        width={0.5}
-        height={0.06}
-      />
-      
-      <InputField
-        label="Message"
-        value={formData.message}
-        field="message"
-        position={[panelPosition[0] - 0.25, panelPosition[1] - 0.15, panelPosition[2] + 0.02]}
-        width={0.5}
-        height={0.12}
-        multiline={true}
-      />
-      
-      {/* Send Button */}
-      <SendButton position={[panelPosition[0] - 0.35, panelPosition[1] - 0.3, panelPosition[2] + 0.02]} />
+        <div style={{
+          width: '100%',
+          padding: '12px',
+          fontFamily: 'Inter, sans-serif',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          borderRadius: '8px',
+          backgroundColor: 'rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          gap: '16px',
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
+          textRendering: 'optimizeLegibility',
+          fontSmooth: 'always',
+          WebkitTextSizeAdjust: '100%',
+        }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: '1' }}>
+            <div>
+              <label htmlFor="name" style={{ 
+                display: 'block', 
+                marginBottom: '4px', 
+                color: '#FFFFFF', 
+                fontSize: '12px',
+                fontWeight: '500'
+              }}>
+                Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '6px',
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  outline: 'none',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                  e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                  e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+                }}
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="email" style={{ 
+                display: 'block', 
+                marginBottom: '4px', 
+                color: '#FFFFFF', 
+                fontSize: '12px',
+                fontWeight: '500'
+              }}>
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '6px',
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  outline: 'none',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                  e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                  e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+                }}
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="message" style={{ 
+                display: 'block', 
+                marginBottom: '4px', 
+                color: '#FFFFFF', 
+                fontSize: '12px',
+                fontWeight: '500'
+              }}>
+                Message
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                value={formData.message}
+                onChange={handleChange}
+                required
+                rows={3}
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '6px',
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  outline: 'none',
+                  resize: 'vertical',
+                  fontFamily: 'inherit',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                  e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                  e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+                }}
+              />
+            </div>
+            
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: isSubmitting ? '#4A90E2' : '#4A90E2',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.7 : 1,
+                transition: 'all 0.2s',
+                marginTop: '4px',
+              }}
+              onMouseEnter={(e) => {
+                if (!isSubmitting) {
+                  e.currentTarget.style.backgroundColor = '#357ABD'
+                  e.currentTarget.style.transform = 'scale(1.02)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isSubmitting) {
+                  e.currentTarget.style.backgroundColor = '#4A90E2'
+                  e.currentTarget.style.transform = 'scale(1)'
+                }
+              }}
+            >
+              {isSubmitting ? 'Sending...' : 'Send'}
+            </button>
+          </form>
+          
+          <div style={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+            alignItems: 'flex-start',
+            paddingLeft: '16px',
+            borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+            color: '#FFFFFF',
+            fontSize: '11px',
+            minWidth: '120px',
+          }}>
+            <div style={{ marginBottom: '4px', fontWeight: '500' }}>Email:</div>
+            <div>nbmendoza1432@gmail.com</div>
+          </div>
+        </div>
+      </Html>
     </animated.group>
   )
 }
